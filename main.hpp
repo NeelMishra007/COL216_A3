@@ -21,6 +21,7 @@ extern const vector<pair<char, const char*>> trace4;
 struct Cache {
     int sets;                           // Number of sets = 2^s
     int blockSize;                      // Block size = 2^b bytes
+    int stalls;                       // Number of stalls (for bus transactions)
     vector<vector<unsigned int>> tags;  // Tag storage [set][line]
     vector<vector<bool>> valid;         // Valid bits [set][line]
     vector<vector<int>> lru;            // LRU ordering [set] holds line indices
@@ -54,5 +55,7 @@ enum class MESIState {
     M,E,S,I
 };
 extern vector<vector<MESIState>> mesiState[4]; 
+
+extern vector<int> clockCycles(4, 0), instructions(4, 0);
 
 #endif // MAIN_HPP

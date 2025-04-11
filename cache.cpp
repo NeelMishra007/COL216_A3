@@ -32,6 +32,76 @@ int parseHexAddress(const string& address) {
     
     return addr_val;
 }
+
+void handle_read_miss(int core, int index, int tag) {
+    Cache &cache = caches[core];
+    int target_line = -1;
+
+    // Try to find an invalid line first
+    for (int i = 0; i < E; i++) {
+        if (mesiState[core][index][i] != MESIState::I) {
+            target_line = i;
+            break;
+        }
+    }
+
+    // If all lines are valid, evict the least recently used (LRU) block
+    if (target_line == -1) {
+        target_line = cache.lru[index].front();
+        cache.lru[index].erase(cache.lru[index].begin());
+
+        if (cache.dirty[index][target_line]) {
+            cache.stalls += 100;
+        }
+    } else {
+        // Remove the chosen block from LRU if it exists there
+        auto it = find(cache.lru[index].begin(), cache.lru[index].end(), target_line);
+        if (it != cache.lru[index].end()) {
+            cache.lru[index].erase(it);
+        }
+    }
+
+    // Load the block from memory and update metadata
+    cache.tags[index][target_line] = tag;
+    cache.dirty[index][target_line] = false; // It's a read miss
+    cache.lru[index].push_back(target_line); // Mark as most recently used
+}
+
+void handle_write_miss(int core, int index, int tag) {
+    Cache &cache = caches[core];
+    int target_line = -1;
+
+    // Try to find an invalid line first
+    for (int i = 0; i < E; i++) {
+        if (mesiState[core][index][i] != MESIState::I) {
+            target_line = i;
+            break;
+        }
+    }
+
+    // If no invalid line, evict the least recently used (LRU) block
+    if (target_line == -1) {
+        target_line = cache.lru[index].front();
+        cache.lru[index].erase(cache.lru[index].begin());
+
+        if (cache.dirty[index][target_line]) {
+            // TODO: Write-back logic goes here (e.g., write back to memory)
+        }
+    } else {
+        // Remove the selected block from its LRU position if it exists
+        auto it = find(cache.lru[index].begin(), cache.lru[index].end(), target_line);
+        if (it != cache.lru[index].end()) {
+            cache.lru[index].erase(it);
+        }
+    }
+
+    // Update the cache metadata for the new block
+    cache.tags[index][target_line] = tag;
+    cache.dirty[index][target_line] = true; // It's a write miss
+    cache.lru[index].push_back(target_line); // Mark as most recently used
+}
+
+
 void run(pair<char, const char*> entry, int core) {
     // Extract access type and address from the trace entry.
     char accessType = entry.first;
@@ -53,7 +123,7 @@ void run(pair<char, const char*> entry, int core) {
     if (accessType == 'R') {
         // Check every line in the set for a tag match.
         for (int i = 0; i < E; i++) {
-            if (cache.valid[index][i] && cache.tags[index][i] == tag) {
+            if (mesiState[core][index][i] != MESIState::I && cache.tags[index][i] == tag) {
                 hit = true;
                 hit_line = i;
                 break;
@@ -67,50 +137,17 @@ void run(pair<char, const char*> entry, int core) {
                 cache.lru[index].erase(it);
             }
             cache.lru[index].push_back(hit_line);
+            clockCycles[core]++;
         }
         else {
-            // Cache miss: Send a BusRd request to the bus.
-            busQueue.push_back(BusReq{core, addr, BusReqType::BusRd});
             
-            // Read miss handling code is commented out below.
-            /* 
-            int target_line = -1;
-            // First try to use an invalid cache line.
-            for (int i = 0; i < E; i++) {
-                if (!cache.valid[index][i]) {
-                    target_line = i;
-                    break;
-                }
-            }
-            // If all lines are valid, choose the LRU block.
-            if (target_line == -1) {
-                target_line = cache.lru[index].front();
-                cache.lru[index].erase(cache.lru[index].begin());
-                if (cache.dirty[index][target_line]) {
-                    // Write-back logic here (e.g., write block back to memory).
-                }
-            }
-            else {
-                // Remove the chosen block from LRU.
-                auto it = find(cache.lru[index].begin(), cache.lru[index].end(), target_line);
-                if (it != cache.lru[index].end()) {
-                    cache.lru[index].erase(it);
-                }
-            }
-    
-            // Load the block from memory and update metadata.
-            cache.tags[index][target_line] = tag;
-            cache.valid[index][target_line] = true;
-            cache.dirty[index][target_line] = false; // Read miss: block is not dirty.
-            // Mark the block as most recently used.
-            cache.lru[index].push_back(target_line);
-            */
+            busQueue.push_back(BusReq{core, addr, BusReqType::BusRd});
         }        
     }
     else { // Write access
         // Search for a matching block in the set.
         for (int i = 0; i < E; i++) {
-            if (cache.valid[index][i] && cache.tags[index][i] == tag) {
+            if (mesiState[core][index][i] != MESIState::I && cache.tags[index][i] == tag) {
                 hit = true;
                 hit_line = i;
                 break;
@@ -126,6 +163,10 @@ void run(pair<char, const char*> entry, int core) {
                 }
                 cache.lru[index].push_back(hit_line);
                 cache.dirty[index][hit_line] = true;
+                if (mesiState[core][index][hit_line] == MESIState::E) {
+                    mesiState[core][index][hit_line] = MESIState::M; // Upgrade to M state.
+                }
+                clockCycles[core]++;
             }
             else {
                 // If the block is in the S state, send a BusUpgr request to upgrade it to M state.
@@ -135,36 +176,6 @@ void run(pair<char, const char*> entry, int core) {
         }
         else {
             busQueue.push_back(BusReq{core, addr, BusReqType::BusRdX});
-            // Write miss handling: find an invalid block first.
-            /*int target_line = -1;
-            for (int i = 0; i < E; i++) {
-                if (!cache.valid[index][i]) {
-                    target_line = i;
-                    break;
-                }
-            }
-            // If no invalid block exists, evict the least recently used block.
-            if (target_line == -1) {
-                target_line = cache.lru[index].front();
-                cache.lru[index].erase(cache.lru[index].begin());
-                if (cache.dirty[index][target_line]) {
-                    // Write-back logic here (e.g., write block back to memory).
-                }
-            }
-            else {
-                // Remove the selected block from its current LRU position.
-                auto it = find(cache.lru[index].begin(), cache.lru[index].end(), target_line);
-                if (it != cache.lru[index].end()) {
-                    cache.lru[index].erase(it);
-                }
-            }
-    
-            // Load the block from memory and update the cache metadata.
-            cache.tags[index][target_line] = tag;
-            cache.valid[index][target_line] = true;
-            cache.dirty[index][target_line] = true; // Write miss: block becomes dirty.
-            // Mark the newly loaded block as most recently used.
-            cache.lru[index].push_back(target_line);*/
         }
     }
 }
