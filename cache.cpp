@@ -39,7 +39,7 @@ void handle_read_miss(int core, int index, int tag) {
 
     // Try to find an invalid line first
     for (int i = 0; i < E; i++) {
-        if (mesiState[core][index][i] != MESIState::I) {
+        if (mesiState[core][index][i] == MESIState::I) {
             target_line = i;
             break;
         }
@@ -73,7 +73,7 @@ void handle_write_miss(int core, int index, int tag) {
 
     // Try to find an invalid line first
     for (int i = 0; i < E; i++) {
-        if (mesiState[core][index][i] != MESIState::I) {
+        if (mesiState[core][index][i] == MESIState::I) {
             target_line = i;
             break;
         }
