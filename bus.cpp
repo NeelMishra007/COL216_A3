@@ -10,6 +10,5 @@
 #include "bus.hpp"
 
 void bus() {
-
-
+    
 }
