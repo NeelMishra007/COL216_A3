@@ -7,7 +7,9 @@
 #include <cstring>       
 #include <cstdlib>     
 #include "main.hpp"
+#include "bus.hpp"
 
-void bus () {
+void bus() {
+
 
 }
