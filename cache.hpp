@@ -1,7 +1,11 @@
 #ifndef CACHE_HPP
 #define CACHE_HPP
 
+#include <vector>
 #include <utility>
+
+
+void run(std::pair<char, const char*> entry, int core);
 
 void handle_read_miss(int core, int index, int tag);
 

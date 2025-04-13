@@ -51,7 +51,9 @@ void handle_read_miss(int core, int index, int tag) {
         cache.lru[index].erase(cache.lru[index].begin());
 
         if (cache.dirty[index][target_line]) {
-            cache.stalls += 100;
+            caches[core].stall = true; // Set the stall flag for the requesting core.
+            busDataQueue.push_back(BusData{0, core, false, true, 100}); // Writeback data.
+
         }
     } else {
         // Remove the chosen block from LRU if it exists there

@@ -12,16 +12,16 @@ extern int b;  // Number of block offset bits: block size = 2^b bytes
 extern int E;  // Associativity (number of lines per set)
 
 // External trace inputs for four cores.
-extern const vector<pair<char, const char*>> trace1;
-extern const vector<pair<char, const char*>> trace2;
-extern const vector<pair<char, const char*>> trace3;
-extern const vector<pair<char, const char*>> trace4;
+extern vector<pair<char, const char*>> trace1;
+extern vector<pair<char, const char*>> trace2;
+extern vector<pair<char, const char*>> trace3;
+extern vector<pair<char, const char*>> trace4;
 
 // Structure to hold a cache's per-core data.
 struct Cache {
     int sets;                           // Number of sets = 2^s
     int blockSize;                      // Block size = 2^b bytes
-    int stalls;                       // Number of stalls (for bus transactions)
+    bool stall;                       
     vector<vector<unsigned int>> tags;  // Tag storage [set][line]
     vector<vector<bool>> valid;         // Valid bits [set][line]
     vector<vector<int>> lru;            // LRU ordering [set] holds line indices
@@ -56,6 +56,7 @@ enum class MESIState {
 };
 extern vector<vector<MESIState>> mesiState[4]; 
 
-extern vector<int> clockCycles(4, 0), instructions(4, 0);
+extern vector<int> instructions;
+extern vector<int> clockCycles;
 
 #endif // MAIN_HPP
