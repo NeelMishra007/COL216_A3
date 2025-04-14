@@ -70,12 +70,10 @@ void simulateMulticore() {
         }
 
         bus();
-        cout << "hello" << caches[0].stall << endl;
         for (int i = 0; i < 4; i++) {
             
             if (!caches[i].stall && coreActive[i]) {
                 // Increment the trace position for the core if not stalled
-                cout << "hi3" << i << endl;
                 tracePos[i]++;
                 instructions[i]++;
             }
@@ -95,7 +93,7 @@ void simulateMulticore() {
     
     // Print final statistics
     cout << "\n===== Simulation Results =====\n";
-    cout << "Total simulation cycles: " << globalCycle << endl;
+    cout << "Total simulation cycles: " << globalCycle - 1 << endl;
     
     for (int i = 0; i < 4; i++) {
         cout << "Core " << i << ":\n";
@@ -183,8 +181,10 @@ int main(int argc, char *argv[]) {
     }
 
     // Initialize the trace vectors with test data
-    trace1 = {{'W', "0x1"}}; // Core 0 reads from address 0x0
-    trace2 = {{'W', "0x1"}}; //Core 0 reads from address 0x0
+    trace1 = {{'W', "0x1"}, {'R', "0x3"}, {'R', "0x1"}}; // Core 0 reads from address 0x0
+    trace2 = {{'W', "0x2"}}; // Core 1 reads from address 0x0
+
+    //trace3 = {{'W', "0x1"}}; // Core 1 reads from address 0x0
     // Other cores have no operations initially
     
     // Initialize simulation counters

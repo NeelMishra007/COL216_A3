@@ -29,6 +29,5 @@ struct BusData {
 };
 
 extern vector<BusReq> busQueue;
-extern set<int> curr_write;
 extern vector<BusData> busDataQueue;
 #endif // BUS_HPP
