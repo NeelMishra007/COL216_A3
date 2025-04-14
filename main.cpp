@@ -49,37 +49,37 @@ void simulateMulticore() {
     int globalCycle = 0;
     
     while (simActive) {
-        // Process bus operations first to handle any pending transfers
-        bus();
-        
+        cout << globalCycle << endl;
         // Process each core in round-robin fashion
         for (int i = 0; i < 4; i++) {
-            // Skip cores that have completed their trace or are stalled
-            if (!coreActive[i] || caches[i].stall) {
+            // Skip cores that have completed their trace
+            if (!coreActive[i]) {
                 continue;
             }
             
+            // Skip stalled cores without incrementing their position
             // Check if there are more instructions for this core
             if (tracePos[i] < traces[i].size()) {
-                // Get the next operation for this core
-                pair<char, const char*> nextOp = traces[i][tracePos[i]];
-                
+                // Get the current operation for this core
+                pair<char, const char*> currentOp = traces[i][tracePos[i]];
                 // Execute the operation
-                run(nextOp, i);
-                
-                // Move to next instruction
-                tracePos[i]++;
-                instructions[i]++;
-                
-                // Check if we've reached the end of the trace
-                if (tracePos[i] >= traces[i].size()) {
-                    coreActive[i] = false;
-                }
+                run(currentOp, i);
             } else {
                 coreActive[i] = false;
             }
         }
-        
+
+        bus();
+        cout << "hello" << caches[0].stall << endl;
+        for (int i = 0; i < 4; i++) {
+            
+            if (!caches[i].stall && coreActive[i]) {
+                // Increment the trace position for the core if not stalled
+                cout << "hi3" << i << endl;
+                tracePos[i]++;
+                instructions[i]++;
+            }
+        }
         // Check if simulation should continue
         simActive = false;
         for (int i = 0; i < 4; i++) {
@@ -91,11 +91,6 @@ void simulateMulticore() {
         }
         
         globalCycle++;
-        
-        // Optional: Print progress or status every N cycles
-        if (globalCycle % 1000 == 0) {
-            cout << "Simulation cycle: " << globalCycle << endl;
-        }
     }
     
     // Print final statistics
@@ -189,7 +184,7 @@ int main(int argc, char *argv[]) {
 
     // Initialize the trace vectors with test data
     trace1 = {{'W', "0x1"}}; // Core 0 reads from address 0x0
-    trace2 = {{'R', "0x1"}}; // Core 0 reads from address 0x0
+    trace2 = {{'W', "0x1"}}; //Core 0 reads from address 0x0
     // Other cores have no operations initially
     
     // Initialize simulation counters

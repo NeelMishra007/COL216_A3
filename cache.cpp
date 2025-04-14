@@ -11,6 +11,9 @@
 
 using namespace std;
 
+// Declaring the external variable defined in bus.cpp
+extern vector<int> corePendingOperation;
+
 int parseHexAddress(const string& address) {
     string hexPart = address;
     
@@ -28,7 +31,7 @@ int parseHexAddress(const string& address) {
     string paddedAddress = ss.str();
     
     // Display the padded address (consider making this optional or removing for production)
-    cout << "Padded Address: " << paddedAddress << endl;
+    //cout << "Padded Address: " << paddedAddress << endl;
     
     return addr_val;
 }
@@ -51,9 +54,10 @@ void handle_read_miss(int core, int index, int tag) {
         cache.lru[index].erase(cache.lru[index].begin());
 
         if (cache.dirty[index][target_line]) {
-            caches[core].stall = true; // Set the stall flag for the requesting core.
-            busDataQueue.push_back(BusData{0, core, false, true, 100}); // Writeback data.
-
+            caches[core].stall = true; // Set the stall flag for the requesting core
+            int old_tag = cache.tags[index][target_line];
+            int old_addr = (old_tag << (s + b)) | (index << b);
+            busDataQueue.push_back(BusData{old_addr, core, false, true, 100}); // Writeback data
         }
     } else {
         // Remove the chosen block from LRU if it exists there
@@ -87,7 +91,9 @@ void handle_write_miss(int core, int index, int tag) {
         cache.lru[index].erase(cache.lru[index].begin());
 
         if (cache.dirty[index][target_line]) {
-            // TODO: Write-back logic goes here (e.g., write back to memory)
+            int old_tag = cache.tags[index][target_line];
+            int old_addr = (old_tag << (s + b)) | (index << b);
+            busDataQueue.push_back(BusData{old_addr, core, false, true, 100}); // Writeback data
         }
     } else {
         // Remove the selected block from its LRU position if it exists
@@ -105,25 +111,31 @@ void handle_write_miss(int core, int index, int tag) {
 
 
 void run(pair<char, const char*> entry, int core) {
-    // Extract access type and address from the trace entry.
+    // Extract access type and address from the trace entry
     char accessType = entry.first;
     string address = entry.second;
+
     
-    // Parse the hexadecimal address.
+    // Parse the hexadecimal address
     int addr = parseHexAddress(address);
-    
-    // Extract index and tag fields from the address.
+    // If this core already has a pending operation, skip issuing a new request
+    if (corePendingOperation[core] != -1) {
+        return;
+    }
+    cout << "Core " << core << " Access Type: " << accessType << ", Address: " << address << endl;
+
+    // Extract index and tag fields from the address
     int index = (addr >> b) & ((1 << s) - 1); // index bits
-    int tag = addr >> (s + b);                  // tag bits
+    int tag = addr >> (s + b);                // tag bits
     
     bool hit = false;
     int hit_line = -1;
     
-    // Use a reference to the core's cache for easier access.
+    // Use a reference to the core's cache for easier access
     Cache &cache = caches[core];
     
     if (accessType == 'R') {
-        // Check every line in the set for a tag match.
+        // Check every line in the set for a tag match
         for (int i = 0; i < E; i++) {
             if (mesiState[core][index][i] != MESIState::I && cache.tags[index][i] == tag) {
                 hit = true;
@@ -133,7 +145,7 @@ void run(pair<char, const char*> entry, int core) {
         }
         
         if (hit) {
-            // Cache hit: Update the LRU ordering for the set.
+            // Cache hit: Update the LRU ordering for the set
             auto it = find(cache.lru[index].begin(), cache.lru[index].end(), hit_line);
             if (it != cache.lru[index].end()) {
                 cache.lru[index].erase(it);
@@ -142,12 +154,12 @@ void run(pair<char, const char*> entry, int core) {
             clockCycles[core]++;
         }
         else {
-            
             busQueue.push_back(BusReq{core, addr, BusReqType::BusRd});
+            caches[core].stall = true; // Set the stall flag for the requesting core
         }        
     }
     else { // Write access
-        // Search for a matching block in the set.
+        // Search for a matching block in the set
         for (int i = 0; i < E; i++) {
             if (mesiState[core][index][i] != MESIState::I && cache.tags[index][i] == tag) {
                 hit = true;
@@ -157,7 +169,7 @@ void run(pair<char, const char*> entry, int core) {
         }
         
         if (hit) {
-            // Cache hit: update the LRU order and mark the block as dirty.
+            // Cache hit: update the LRU order and mark the block as dirty
             if (mesiState[core][index][hit_line] == MESIState::E || mesiState[core][index][hit_line] == MESIState::M) {
                 auto it = find(cache.lru[index].begin(), cache.lru[index].end(), hit_line);
                 if (it != cache.lru[index].end()) {
@@ -166,18 +178,19 @@ void run(pair<char, const char*> entry, int core) {
                 cache.lru[index].push_back(hit_line);
                 cache.dirty[index][hit_line] = true;
                 if (mesiState[core][index][hit_line] == MESIState::E) {
-                    mesiState[core][index][hit_line] = MESIState::M; // Upgrade to M state.
+                    mesiState[core][index][hit_line] = MESIState::M; // Upgrade to M state
                 }
                 clockCycles[core]++;
             }
             else {
-                // If the block is in the S state, send a BusUpgr request to upgrade it to M state.
+                // If the block is in the S state, send a BusUpgr request to upgrade it to M state
                 busQueue.push_back(BusReq{core, addr, BusReqType::BusUpgr});
             }
 
         }
         else {
             busQueue.push_back(BusReq{core, addr, BusReqType::BusRdX});
+            caches[core].stall = true;
         }
     }
 }
