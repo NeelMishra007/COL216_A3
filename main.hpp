@@ -59,4 +59,14 @@ extern vector<vector<MESIState>> mesiState[4];
 extern vector<int> instructions;
 extern vector<int> clockCycles;
 
+extern vector<int> num_reads;
+extern vector<int> num_writes;
+extern vector<int> cache_misses;
+extern vector<int> cache_evictions;
+extern vector<int> writebacks;
+extern vector<int> bus_invalidations;
+extern vector<long long> data_traffic_bytes;
+extern int total_bus_transactions;
+extern long long total_bus_traffic_bytes;
+
 #endif // MAIN_HPP
