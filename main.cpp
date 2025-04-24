@@ -111,6 +111,22 @@ void simulateMulticore()
         globalCycle++;
     }
 
+    for (int i = 0; i < 4; i++)
+    {
+        // Update the clock cycles for each core
+        for (int j = 0; j<traces[i].size(); j++)
+        {
+            if (traces[i][j].first == 'R')
+            {
+                num_reads[i]++;
+            }
+            else if (traces[i][j].first == 'W')
+            {
+                num_writes[i]++;
+            }
+        }
+        
+    }
     // Print final statistics
     cout << "\n===== Simulation Results =====\n";
     cout << "Total simulation cycles: " << globalCycle - 1 << endl;

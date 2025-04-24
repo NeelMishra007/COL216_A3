@@ -78,6 +78,7 @@ void bus()
         if (type == BusReqType::BusRd)
         {
             total_bus_transactions++; // Increment bus transaction counter
+            cache_misses[core]++;     // Increment miss counter
             // cout << core << "hi2" << endl;
             bool found = false;
             for (int i = 0; i < 4; i++)
@@ -128,6 +129,7 @@ void bus()
             total_bus_transactions++; // Increment bus transaction counter
             bool found = false;
             bool foundm = false;
+            cache_misses[core]++; // Increment miss counter
             // Check if any other cache has this line and invalidate it
             for (int i = 0; i < 4; i++)
             {

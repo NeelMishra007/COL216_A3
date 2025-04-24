@@ -150,14 +150,6 @@ void run(pair<char, const char *> entry, int core)
         return;
     }
     // Increment read/write counters
-    if (accessType == 'R')
-    {
-        num_reads[core]++;
-    }
-    else
-    {
-        num_writes[core]++;
-    }
     cout << "Core " << core << " Access Type: " << accessType << ", Address: " << address << endl;
 
     // Extract index and tag fields from the address
@@ -196,7 +188,6 @@ void run(pair<char, const char *> entry, int core)
         }
         else
         {
-            cache_misses[core]++; // Increment miss counter
             busQueue.push_back(BusReq{core, addr, BusReqType::BusRd});
             caches[core].stall = true; // Set the stall flag for the requesting core
         }
@@ -241,7 +232,6 @@ void run(pair<char, const char *> entry, int core)
         }
         else
         {
-            cache_misses[core]++; // Increment miss counter
             busQueue.push_back(BusReq{core, addr, BusReqType::BusRdX});
             caches[core].stall = true;
         }
