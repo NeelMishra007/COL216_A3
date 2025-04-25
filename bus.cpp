@@ -19,8 +19,8 @@ void bus()
         BusReq busReq = busQueue.front();
         busQueue.erase(busQueue.begin());
 
-        //cout << "busReq: " << busReq.coreId << " " << busReq.address << " " << (int)busReq.type << endl;
-
+        cout << "busReq: " << busReq.coreId << " " << busReq.address << " " << (int)busReq.type << endl;
+        //cout << bus_busy << endl;
         int core = busReq.coreId;
         int addr = busReq.address;
         BusReqType type = busReq.type;
@@ -74,9 +74,9 @@ void bus()
             continue;
         }
         corePendingOperation[core] = addr;
-        bus_busy = true;
         if (type == BusReqType::BusRd)
         {
+            bus_busy = true;
             total_bus_transactions++; // Increment bus transaction counter
             cache_misses[core]++;     // Increment miss counter
             // cout << core << "hi2" << endl;
@@ -126,6 +126,7 @@ void bus()
         }
         else if (type == BusReqType::BusRdX)
         {
+            bus_busy = true;
             total_bus_transactions++; // Increment bus transaction counter
             bool found = false;
             bool foundm = false;
@@ -162,7 +163,6 @@ void bus()
             total_bus_traffic_bytes += caches[core].blockSize; // Add request traffic
         }
     }
-
     // Handle a single bus data operation if any
     if (!busDataQueue.empty())
     {

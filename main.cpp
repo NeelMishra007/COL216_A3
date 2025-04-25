@@ -129,7 +129,7 @@ void simulateMulticore()
             else
             {
                 coreActive[i] = false;
-                cout << i << endl;
+                //cout << i << endl;
             }
         }
 
@@ -139,7 +139,10 @@ void simulateMulticore()
 
             if (!caches[i].stall && coreActive[i])
             { 
-                //cout << tracePos[i] << endl;
+                if (tracePos[i] % 100000 == 0) {
+                    cout << "Core " << i << " Cycle: " << globalCycle << ", Instruction: " << tracePos[i] << endl;
+                }
+                //cout << i << " " << tracePos[i] << endl;
                 tracePos[i]++;
                 instructions[i]++;
             }
