@@ -19,7 +19,7 @@ void bus()
         BusReq busReq = busQueue.front();
         busQueue.erase(busQueue.begin());
 
-        cout << "busReq: " << busReq.coreId << " " << busReq.address << " " << (int)busReq.type << endl;
+        //cout << "busReq: " << busReq.coreId << " " << busReq.address << " " << (int)busReq.type << endl;
 
         int core = busReq.coreId;
         int addr = busReq.address;
@@ -167,7 +167,7 @@ void bus()
     if (!busDataQueue.empty())
     {
         BusData &busData = busDataQueue.front();
-        // cout << "busData: " << busData.coreId << " " << busData.address << " " << (int)busData.writeback << endl;
+        //cout << "busData: " << busData.coreId << " " << busData.address << " " << (int)busData.writeback << endl;
 
         // Check if the stall counter has reached zero
         if (busData.stalls == 0)

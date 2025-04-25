@@ -150,7 +150,7 @@ void run(pair<char, const char *> entry, int core)
         return;
     }
     // Increment read/write counters
-    cout << "Core " << core << " Access Type: " << accessType << ", Address: " << address << endl;
+    //cout << "Core " << core << " Access Type: " << accessType << ", Address: " << address << endl;
 
     // Extract index and tag fields from the address
     int index = (addr >> b) & ((1 << s) - 1); // index bits

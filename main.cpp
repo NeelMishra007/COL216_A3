@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstring>
 #include <cstdlib>
+#include <fstream>
 #include "main.hpp"
 #include "bus.hpp"
 #include "cache.hpp"
@@ -42,6 +43,52 @@ vector<long long> data_traffic_bytes(4, 0);
 int total_bus_transactions = 0;
 long long total_bus_traffic_bytes = 0;
 
+// Function to load trace files based on prefix
+bool loadTraceFiles(const string &tracePrefix) {
+    vector<vector<pair<char, const char *>>*> traces = {&trace1, &trace2, &trace3, &trace4};
+    
+    for (int i = 0; i < 4; i++) {
+        // Construct filename: app1_proc0.trace, app1_proc1.trace, etc.
+        string filename = tracePrefix + "_proc" + to_string(i) + ".trace";
+        ifstream traceFile(filename);
+        
+        if (!traceFile.is_open()) {
+            cerr << "Error: Could not open trace file " << filename << endl;
+            return false;
+        }
+        
+        // Clear any existing data
+        traces[i]->clear();
+        
+        string line;
+        while (getline(traceFile, line)) {
+            // Skip empty lines or comments
+            if (line.empty() || line[0] == '#') {
+                continue;
+            }
+            
+            // Parse line like "R 0x817b08"
+            istringstream iss(line);
+            char op;
+            string address;
+            
+            if (iss >> op >> address) {
+                // Only process read (R) and write (W) operations
+                if (op == 'R' || op == 'W') {
+                    // We need to create a persistent copy of the address string
+                    char *addressCopy = new char[address.length() + 1];
+                    strcpy(addressCopy, address.c_str());
+                    traces[i]->push_back({op, addressCopy});
+                }
+            }
+        }
+        
+        traceFile.close();
+    }
+    
+    return true;
+}
+
 void simulateMulticore()
 {
     // Initialize counters for trace position for each core
@@ -60,7 +107,7 @@ void simulateMulticore()
 
     while (simActive)
     {
-        cout << globalCycle << endl;
+        //cout << globalCycle << endl;
         // Process each core in round-robin fashion
         for (int i = 0; i < 4; i++)
         {
@@ -82,6 +129,7 @@ void simulateMulticore()
             else
             {
                 coreActive[i] = false;
+                cout << i << endl;
             }
         }
 
@@ -90,8 +138,8 @@ void simulateMulticore()
         {
 
             if (!caches[i].stall && coreActive[i])
-            {
-                // Increment the trace position for the core if not stalled
+            { 
+                //cout << tracePos[i] << endl;
                 tracePos[i]++;
                 instructions[i]++;
             }
@@ -192,9 +240,10 @@ void printUsage(const char *progName)
 
 int main(int argc, char *argv[])
 {
-    string tracefile;
+    string tracePrefix;
     string outfilename;
 
+    // Parse command line arguments
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "-h") == 0)
@@ -206,7 +255,7 @@ int main(int argc, char *argv[])
         {
             if (i + 1 < argc)
             {
-                tracefile = argv[++i];
+                tracePrefix = argv[++i];
             }
             else
             {
@@ -252,6 +301,7 @@ int main(int argc, char *argv[])
         }
         else if (strcmp(argv[i], "-o") == 0)
         {
+            
             if (i + 1 < argc)
             {
                 outfilename = argv[++i];
@@ -261,12 +311,26 @@ int main(int argc, char *argv[])
                 cerr << "Error: Missing argument for -o option.\n";
                 return 1;
             }
+            cout << "Output file name: " << argv[i] << endl;
         }
         else
         {
             cerr << "Error: Unknown option " << argv[i] << ".\n";
             return 1;
         }
+    }
+
+    // Check if required arguments are provided
+    if (tracePrefix.empty()) {
+        cerr << "Error: Trace file prefix (-t) is required.\n";
+        printUsage(argv[0]);
+        return 1;
+    }
+
+    // Load trace files
+    if (!loadTraceFiles(tracePrefix)) {
+        cerr << "Error loading trace files. Exiting.\n";
+        return 1;
     }
 
     // Initialize caches and MESI state vectors
@@ -276,19 +340,38 @@ int main(int argc, char *argv[])
         mesiState[i].assign(1 << s, vector<MESIState>(E, MESIState::I));
     }
 
-    // Initialize the trace vectors with test data
-    trace1 = {{'W', "0x1"}, {'R', "0x3"}, {'R', "0x1"}}; // Core 0 reads from address 0x0
-    trace2 = {{'W', "0x2"}};                             // Core 1 reads from address 0x0
-
-    // trace3 = {{'W', "0x1"}}; // Core 1 reads from address 0x0
-    //  Other cores have no operations initially
-
     // Initialize simulation counters
     instructions.assign(4, 0);
     clockCycles.assign(4, 0);
 
-    // Run the simulation
-    simulateMulticore();
+    // Set up output file if specified
+    ofstream outFile;
+    if (!outfilename.empty()) {
+        outFile.open(outfilename);
+        if (!outFile.is_open()) {
+            cerr << "Error: Could not open output file " << outfilename << endl;
+            return 1;
+        }
+        // Redirect cout to the file
+        streambuf* coutBuffer = cout.rdbuf();
+        cout.rdbuf(outFile.rdbuf());
+        
+        // Run simulation
+        simulateMulticore();
+        
+        // Restore cout
+        cout.rdbuf(coutBuffer);
+        outFile.close();
+    } else {
+        // Run simulation with output to console
+        simulateMulticore();
+    }
+
+    // Clean up dynamically allocated memory for address strings
+    for (auto& p : trace1) delete[] p.second;
+    for (auto& p : trace2) delete[] p.second;
+    for (auto& p : trace3) delete[] p.second;
+    for (auto& p : trace4) delete[] p.second;
 
     return 0;
 }
