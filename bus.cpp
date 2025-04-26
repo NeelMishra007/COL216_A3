@@ -64,7 +64,7 @@ void bus()
                             caches[core].stall = true; // Set the stall flag for the requesting core
                             // cout << "yes" << endl;
                             busDataQueue.push_back(BusData{addr, core, false, false, 1 << (b - 1)}); // Send data to the requesting core
-
+                            data_traffic_bytes[i] += caches[i].blockSize;
                             if (mesiState[i][index][j] == MESIState::M)
                             {
                                 // Send BusRd to share the line with the requesting core
@@ -99,7 +99,6 @@ void bus()
             bus_busy = true;
             total_bus_transactions++; // Increment bus transaction counter
             bool found = false;
-            bool foundm = false;
             cache_misses[core]++; // Increment miss counter
             // Check if any other cache has this line and invalidate it
             for (int i = 0; i < 4; i++)
@@ -110,10 +109,10 @@ void bus()
                     {
                         if (caches[i].tags[index][j] == tag && mesiState[i][index][j] != MESIState::I)
                         {
+                            found = true;
                             // Invalidate the line
                             if (mesiState[i][index][j] == MESIState::M)
                             {
-                                foundm = true;
                                 // Send BusRd to share the line with the requesting core
                                 caches[i].stall = true;                                     // Set the stall flag for the core
                                 busDataQueue.push_back(BusData{addr, i, false, true, 100}); // Writeback data
@@ -121,13 +120,14 @@ void bus()
                             }
 
                             mesiState[i][index][j] = MESIState::I;
-                            bus_invalidations[i]++; // Increment invalidation counter
+                            // bus_invalidations[i]++; // Increment invalidation counter
                         }
                     }
                 }
             }
             caches[core].stall = true; // Set the stall flag for the requesting core
-
+            if (found)
+                bus_invalidations[core]++; // Increment invalidation counter
             busDataQueue.push_back(BusData{addr, core, true, false, 100});
         }
         else if (type == BusReqType::BusUpgr)
