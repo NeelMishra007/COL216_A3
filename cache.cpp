@@ -192,7 +192,7 @@ void run(pair<char, const char *> entry, int core)
             }
             cache.lru[index].push_back(hit_line);
             clockCycles[core]++;
-            caches[core].stall = false;
+            //caches[core].stall = false;
         }
         else
         {
@@ -236,11 +236,10 @@ void run(pair<char, const char *> entry, int core)
                     mesiState[core][index][hit_line] = MESIState::M; // Upgrade to M state
                 }
                 clockCycles[core]++;
-                caches[core].stall = false;
+                //caches[core].stall = false;
             }
             else
             {
-
                 // If the block is in the S state, send a BusUpgr request to upgrade it to M state
                 busQueue.push_back(BusReq{core, addr, BusReqType::BusUpgr});
             }
