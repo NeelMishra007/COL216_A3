@@ -198,6 +198,7 @@ void simulateMulticore()
             }
         }
     }
+    int maxtime = 0;
     // Print final statistics
     cout << "\n===== Simulation Results =====\n";
     cout << "Total simulation cycles: " << globalCycle - 1 << endl;
@@ -207,6 +208,7 @@ void simulateMulticore()
         cout << "Core " << i << ":\n";
         cout << "  Instructions executed: " << instructions[i] << endl;
         cout << endl;
+        maxtime = max(maxtime, clockCycles[i]);
     }
     string trace_prefix = "app"; // Replace with tracefile from command-line if available
     int block_size = 1 << b;
@@ -246,6 +248,8 @@ void simulateMulticore()
     cout << "Overall Bus Summary:\n";
     cout << "Total Bus Transactions: " << total_bus_transactions << "\n";
     cout << "Total Bus Traffic (Bytes): " << total_bus_traffic_bytes << "\n";
+
+    cout << "Maximum Execution Time (cycles): " << maxtime << "\n";
 }
 
 void printUsage(const char *progName)
@@ -358,10 +362,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    trace1 = {{'W', "0x0"}, {'R', "0x3"}};
-    trace2 = {{'W', "0x0"}};
-    trace3 = {};
-    trace4 = {};
+    // trace1 = {{'W', "0x0"}, {'R', "0x3"}};
+    // trace2 = {{'W', "0x0"}};
+    // trace3 = {};
+    // trace4 = {};
     // Initialize caches and MESI state vectors
     for (int i = 0; i < 4; ++i)
     {

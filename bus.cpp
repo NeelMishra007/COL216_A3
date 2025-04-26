@@ -157,13 +157,14 @@ void bus()
                             if (caches[i].tags[index][j] == tag && mesiState[i][index][j] != MESIState::I)
                             {
                                 mesiState[i][index][j] = MESIState::I; // Invalidate the line in other caches
-                                bus_invalidations[i]++;                // Increment invalidation counter
+                                // bus_invalidations[i]++;                // Increment invalidation counter
                             }
                         }
                     }
                 }
 
                 // Upgrade the state to Modified
+                bus_invalidations[core]++; // Increment invalidation counter
                 mesiState[core][index][target_line] = MESIState::M;
                 caches[core].dirty[index][target_line] = true; // Mark the line as dirty
                 caches[core].stall = false;                    // Clear the stall since operation completes immediately
