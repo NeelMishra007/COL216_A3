@@ -12,15 +12,17 @@
 // Track pending bus operations per core
 vector<int> corePendingOperation(4, -1); // -1 indicates no pending operation
 bool bus_busy = false;
+int cycle = 0;
 void bus()
 {
+    cycle++;
     while (busQueue.size())
     {
         BusReq busReq = busQueue.front();
         busQueue.erase(busQueue.begin());
 
-        //cout << "busReq: " << busReq.coreId << " " << busReq.address << " " << (int)busReq.type << endl;
-        //cout << bus_busy << endl;
+        // cout << "busReq: " << busReq.coreId << " " << busReq.address << " " << (int)busReq.type << endl;
+        // cout << bus_busy << endl;
         int core = busReq.coreId;
         int addr = busReq.address;
         BusReqType type = busReq.type;
@@ -71,6 +73,10 @@ void bus()
         if (bus_busy)
         {
             caches[core].stall = true;
+            // if (cycle % 100000 == 0)
+            // {
+            //     cout << "Core " << core << " Cycle: " << cycle << ", Instruction: " << instructions[core] << endl;
+            // }
             continue;
         }
         corePendingOperation[core] = addr;
@@ -167,11 +173,11 @@ void bus()
     if (!busDataQueue.empty())
     {
         BusData &busData = busDataQueue.front();
-        //cout << "busData: " << busData.coreId << " " << busData.address << " " << (int)busData.writeback << endl;
-
+        // cout << "busData: " << busData.coreId << " " << busData.address << " " << (int)busData.writeback << endl;
         // Check if the stall counter has reached zero
         if (busData.stalls == 0)
         {
+
             int core = busData.coreId;
             int addr = busData.address;
             bool isWrite = busData.write;
@@ -180,6 +186,7 @@ void bus()
             // Process completed bus data transfer
             if (!isWriteback)
             {
+
                 // Extract index and tag fields from the address
                 int index = (addr >> b) & ((1 << s) - 1);
                 int tag = addr >> (s + b);
@@ -244,7 +251,12 @@ void bus()
             }
 
             // Remove this entry from the queue
+
             busDataQueue.erase(busDataQueue.begin());
+            if (busDataQueue.size() > 0)
+            {
+                cout << busDataQueue.size() << endl;
+            }
             if (busDataQueue.empty())
             {
                 bus_busy = false;

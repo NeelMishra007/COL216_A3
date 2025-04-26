@@ -44,37 +44,44 @@ int total_bus_transactions = 0;
 long long total_bus_traffic_bytes = 0;
 
 // Function to load trace files based on prefix
-bool loadTraceFiles(const string &tracePrefix) {
-    vector<vector<pair<char, const char *>>*> traces = {&trace1, &trace2, &trace3, &trace4};
-    
-    for (int i = 0; i < 4; i++) {
+bool loadTraceFiles(const string &tracePrefix)
+{
+    vector<vector<pair<char, const char *>> *> traces = {&trace1, &trace2, &trace3, &trace4};
+
+    for (int i = 0; i < 4; i++)
+    {
         // Construct filename: app1_proc0.trace, app1_proc1.trace, etc.
         string filename = tracePrefix + "_proc" + to_string(i) + ".trace";
         ifstream traceFile(filename);
-        
-        if (!traceFile.is_open()) {
+
+        if (!traceFile.is_open())
+        {
             cerr << "Error: Could not open trace file " << filename << endl;
             return false;
         }
-        
+
         // Clear any existing data
         traces[i]->clear();
-        
+
         string line;
-        while (getline(traceFile, line)) {
+        while (getline(traceFile, line))
+        {
             // Skip empty lines or comments
-            if (line.empty() || line[0] == '#') {
+            if (line.empty() || line[0] == '#')
+            {
                 continue;
             }
-            
+
             // Parse line like "R 0x817b08"
             istringstream iss(line);
             char op;
             string address;
-            
-            if (iss >> op >> address) {
+
+            if (iss >> op >> address)
+            {
                 // Only process read (R) and write (W) operations
-                if (op == 'R' || op == 'W') {
+                if (op == 'R' || op == 'W')
+                {
                     // We need to create a persistent copy of the address string
                     char *addressCopy = new char[address.length() + 1];
                     strcpy(addressCopy, address.c_str());
@@ -82,10 +89,10 @@ bool loadTraceFiles(const string &tracePrefix) {
                 }
             }
         }
-        
+
         traceFile.close();
     }
-    
+
     return true;
 }
 
@@ -107,12 +114,13 @@ void simulateMulticore()
 
     while (simActive)
     {
-        if (globalCycle % 100000 == 0) {
+        if (globalCycle % 100000 == 0)
+        {
             cout << coreActive[0] << " " << coreActive[1] << " " << coreActive[2] << " " << coreActive[3] << endl;
         }
-        //cout << coreActive[0] << " " << coreActive[1] << " " << coreActive[2] << " " << coreActive[3] << endl;
-        //cout << globalCycle << endl;
-        // Process each core in round-robin fashion
+        // cout << coreActive[0] << " " << coreActive[1] << " " << coreActive[2] << " " << coreActive[3] << endl;
+        // cout << globalCycle << endl;
+        //  Process each core in round-robin fashion
         for (int i = 0; i < 4; i++)
         {
             // Skip cores that have completed their trace
@@ -128,6 +136,10 @@ void simulateMulticore()
                 // Get the current operation for this core
                 pair<char, const char *> currentOp = traces[i][tracePos[i]];
                 // Execute the operation
+                // if (globalCycle % 100000 == 0)
+                // {
+                //     cout << "Core " << i << " Cycle: " << globalCycle << ", Instruction: " << tracePos[i] << endl;
+                // }
                 run(currentOp, i);
             }
             else
@@ -142,11 +154,12 @@ void simulateMulticore()
         {
 
             if (!caches[i].stall && coreActive[i])
-            { 
-                if (tracePos[i] % 100000 == 0) {
+            {
+                if (tracePos[i] % 100000 == 0)
+                {
                     cout << "Core " << i << " Cycle: " << globalCycle << ", Instruction: " << tracePos[i] << endl;
                 }
-                //cout << i << " " << tracePos[i] << endl;
+                // cout << i << " " << tracePos[i] << endl;
                 tracePos[i]++;
                 instructions[i]++;
             }
@@ -169,7 +182,7 @@ void simulateMulticore()
     for (int i = 0; i < 4; i++)
     {
         // Update the clock cycles for each core
-        for (int j = 0; j<traces[i].size(); j++)
+        for (int j = 0; j < traces[i].size(); j++)
         {
             if (traces[i][j].first == 'R')
             {
@@ -180,7 +193,6 @@ void simulateMulticore()
                 num_writes[i]++;
             }
         }
-        
     }
     // Print final statistics
     cout << "\n===== Simulation Results =====\n";
@@ -308,7 +320,7 @@ int main(int argc, char *argv[])
         }
         else if (strcmp(argv[i], "-o") == 0)
         {
-            
+
             if (i + 1 < argc)
             {
                 outfilename = argv[++i];
@@ -328,14 +340,16 @@ int main(int argc, char *argv[])
     }
 
     // Check if required arguments are provided
-    if (tracePrefix.empty()) {
+    if (tracePrefix.empty())
+    {
         cerr << "Error: Trace file prefix (-t) is required.\n";
         printUsage(argv[0]);
         return 1;
     }
 
     // Load trace files
-    if (!loadTraceFiles(tracePrefix)) {
+    if (!loadTraceFiles(tracePrefix))
+    {
         cerr << "Error loading trace files. Exiting.\n";
         return 1;
     }
@@ -353,32 +367,40 @@ int main(int argc, char *argv[])
 
     // Set up output file if specified
     ofstream outFile;
-    if (!outfilename.empty()) {
+    if (!outfilename.empty())
+    {
         outFile.open(outfilename);
-        if (!outFile.is_open()) {
+        if (!outFile.is_open())
+        {
             cerr << "Error: Could not open output file " << outfilename << endl;
             return 1;
         }
         // Redirect cout to the file
-        streambuf* coutBuffer = cout.rdbuf();
+        streambuf *coutBuffer = cout.rdbuf();
         cout.rdbuf(outFile.rdbuf());
-        
+
         // Run simulation
         simulateMulticore();
-        
+
         // Restore cout
         cout.rdbuf(coutBuffer);
         outFile.close();
-    } else {
+    }
+    else
+    {
         // Run simulation with output to console
         simulateMulticore();
     }
 
     // Clean up dynamically allocated memory for address strings
-    for (auto& p : trace1) delete[] p.second;
-    for (auto& p : trace2) delete[] p.second;
-    for (auto& p : trace3) delete[] p.second;
-    for (auto& p : trace4) delete[] p.second;
+    for (auto &p : trace1)
+        delete[] p.second;
+    for (auto &p : trace2)
+        delete[] p.second;
+    for (auto &p : trace3)
+        delete[] p.second;
+    for (auto &p : trace4)
+        delete[] p.second;
 
     return 0;
 }
