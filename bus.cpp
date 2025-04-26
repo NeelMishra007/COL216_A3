@@ -27,9 +27,9 @@ void bus()
         int addr = busReq.address;
         BusReqType type = busReq.type;
 
-        //if (busReq.address == 0x7f13d768)
+        // if (busReq.address == 0x7f13d768)
         //{
-             //cout << "Core " << core << " Cycle: " << cycle << ", Instruction: " << instructions[core] << endl;
+        // cout << "Core " << core << " Cycle: " << cycle << ", Instruction: " << instructions[core] << endl;
         //}
 
         int index = (addr >> b) & ((1 << s) - 1);
@@ -38,9 +38,9 @@ void bus()
         if (bus_busy)
         {
             caches[core].stall = true;
-            //if (cycle % 100000 == 0)
+            // if (cycle % 100000 == 0)
             //{
-                 //cout << "Core " << core << " Cycle: " << cycle << ", Instruction: " << instructions[core] << endl;
+            // cout << "Core " << core << " Cycle: " << cycle << ", Instruction: " << instructions[core] << endl;
             //}
             continue;
         }
@@ -92,7 +92,6 @@ void bus()
             {
                 caches[core].stall = true;
                 busDataQueue.push_back(BusData{addr, core, false, false, 100}); // Send data to the requesting core
-                total_bus_traffic_bytes += caches[busReq.coreId].blockSize;     // Add request traffic
             }
         }
         else if (type == BusReqType::BusRdX)
@@ -118,7 +117,6 @@ void bus()
                                 // Send BusRd to share the line with the requesting core
                                 caches[i].stall = true;                                     // Set the stall flag for the core
                                 busDataQueue.push_back(BusData{addr, i, false, true, 100}); // Writeback data
-                                total_bus_traffic_bytes += caches[i].blockSize;             // Add request traffic
                                 corePendingOperation[i] = addr;
                             }
 
@@ -131,7 +129,6 @@ void bus()
             caches[core].stall = true; // Set the stall flag for the requesting core
 
             busDataQueue.push_back(BusData{addr, core, true, false, 100});
-            total_bus_traffic_bytes += caches[core].blockSize; // Add request traffic
         }
         else if (type == BusReqType::BusUpgr)
         {
@@ -148,6 +145,8 @@ void bus()
 
             if (target_line != -1)
             {
+                total_bus_transactions++; // Increment bus transaction counter
+
                 // Invalidate copies in other caches
                 for (int i = 0; i < 4; i++)
                 {
@@ -170,9 +169,7 @@ void bus()
                 caches[core].stall = false;                    // Clear the stall since operation completes immediately
                 corePendingOperation[core] = -1;               // Clear pending operation for this core
             }
-            total_bus_transactions++; // Increment bus transaction counter
         }
-
     }
     // Handle a single bus data operation if any
     if (!busDataQueue.empty())
@@ -182,12 +179,12 @@ void bus()
         // Check if the stall counter has reached zero
         if (busData.stalls == 0)
         {
-
+            total_bus_traffic_bytes += caches[busData.coreId].blockSize; // Increment bus traffic counter
             int core = busData.coreId;
             int addr = busData.address;
             bool isWrite = busData.write;
             bool isWriteback = busData.writeback;
-
+            data_traffic_bytes[core] += caches[core].blockSize; // Add writeback traffic
             // Process completed bus data transfer
             if (!isWriteback)
             {
@@ -195,7 +192,6 @@ void bus()
                 // Extract index and tag fields from the address
                 int index = (addr >> b) & ((1 << s) - 1);
                 int tag = addr >> (s + b);
-                data_traffic_bytes[core] += caches[core].blockSize; // Add writeback traffic
                 // Process read or write miss
                 if (isWrite)
                 {
@@ -205,8 +201,8 @@ void bus()
                 else
                 {
                     int way = handle_read_miss(core, index, tag);
-                    //cout << core << " " << index << " " << tag << endl;
-                    // Check if other caches have the data to determine state
+                    // cout << core << " " << index << " " << tag << endl;
+                    //  Check if other caches have the data to determine state
                     bool otherCachesHaveData = false;
                     for (int j = 0; j < 4; j++)
                     {
@@ -233,7 +229,7 @@ void bus()
                     else
                     {
                         mesiState[core][index][way] = MESIState::E;
-                        //cout << " " << "hi2" << core << " " << index << " " << tag << endl; 
+                        // cout << " " << "hi2" << core << " " << index << " " << tag << endl;
                     }
                 }
 
@@ -246,8 +242,7 @@ void bus()
             }
             else
             {
-                writebacks[core]++;                                 // Increment writeback counter
-                data_traffic_bytes[core] += caches[core].blockSize; // Add writeback traffic
+                writebacks[core]++; // Increment writeback counter
                 // Handle writeback completion
                 // Just clear stall flag as writeback is complete
                 caches[core].stall = false;
@@ -261,7 +256,7 @@ void bus()
             busDataQueue.erase(busDataQueue.begin());
             if (busDataQueue.size() > 0)
             {
-                //cout << "busDataQueue: " << busDataQueue.size() << endl;
+                // cout << "busDataQueue: " << busDataQueue.size() << endl;
             }
             if (busDataQueue.empty())
             {

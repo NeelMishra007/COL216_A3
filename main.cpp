@@ -162,6 +162,10 @@ void simulateMulticore()
                 // cout << i << " " << tracePos[i] << endl;
                 tracePos[i]++;
                 instructions[i]++;
+                if (tracePos[i] == traces[i].size())
+                {
+                    clockCycles[i] = globalCycle;
+                }
             }
         }
         // Check if simulation should continue
@@ -354,6 +358,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    trace1 = {{'W', "0x0"}, {'R', "0x3"}};
+    trace2 = {{'W', "0x0"}};
+    trace3 = {};
+    trace4 = {};
     // Initialize caches and MESI state vectors
     for (int i = 0; i < 4; ++i)
     {
