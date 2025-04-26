@@ -19,7 +19,7 @@ extern vector<int> cache_misses;
 extern vector<int> cache_evictions;
 extern vector<int> writebacks;
 extern vector<long long> data_traffic_bytes;
-
+int cycle2 = 0;
 int parseHexAddress(const string &address)
 {
     string hexPart = address;
@@ -138,6 +138,7 @@ void handle_write_miss(int core, int index, int tag)
 
 void run(pair<char, const char *> entry, int core)
 {
+    cycle2++;
     // Extract access type and address from the trace entry
     char accessType = entry.first;
     string address = entry.second;
@@ -150,7 +151,10 @@ void run(pair<char, const char *> entry, int core)
         return;
     }
     // Increment read/write counters
-    //cout << "Core " << core << " Access Type: " << accessType << ", Address: " << address << endl;
+    if (cycle2 % 100000 == 0)
+    {
+        cout << "Core " << core << " Access Type: " << accessType << ", Address: " << address << " " << caches[core].stall << endl;
+    }
 
     // Extract index and tag fields from the address
     int index = (addr >> b) & ((1 << s) - 1); // index bits
@@ -185,6 +189,7 @@ void run(pair<char, const char *> entry, int core)
             }
             cache.lru[index].push_back(hit_line);
             clockCycles[core]++;
+            caches[core].stall = false;
         }
         else
         {
@@ -207,6 +212,11 @@ void run(pair<char, const char *> entry, int core)
 
         if (hit)
         {
+            if (cycle2 % 100000 == 0)
+            {
+                cout << "Core " << core << " Access Type: " << accessType << ", Address: " << address << " " << "hit" << endl;
+            }
+            
             // Cache hit: update the LRU order and mark the block as dirty
             if (mesiState[core][index][hit_line] == MESIState::E || mesiState[core][index][hit_line] == MESIState::M)
             {
@@ -222,16 +232,18 @@ void run(pair<char, const char *> entry, int core)
                     mesiState[core][index][hit_line] = MESIState::M; // Upgrade to M state
                 }
                 clockCycles[core]++;
+                caches[core].stall = false;
             }
             else
             {
-                
+
                 // If the block is in the S state, send a BusUpgr request to upgrade it to M state
                 busQueue.push_back(BusReq{core, addr, BusReqType::BusUpgr});
             }
         }
         else
         {
+
             busQueue.push_back(BusReq{core, addr, BusReqType::BusRdX});
             caches[core].stall = true;
         }

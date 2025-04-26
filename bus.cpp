@@ -27,6 +27,11 @@ void bus()
         int addr = busReq.address;
         BusReqType type = busReq.type;
 
+        if (busReq.address == 0x7f13d768)
+        {
+             cout << "Core " << core << " Cycle: " << cycle << ", Instruction: " << instructions[core] << endl;
+        }
+
         int index = (addr >> b) & ((1 << s) - 1);
         int tag = addr >> (s + b);
 
@@ -73,10 +78,10 @@ void bus()
         if (bus_busy)
         {
             caches[core].stall = true;
-            // if (cycle % 100000 == 0)
-            // {
-            //     cout << "Core " << core << " Cycle: " << cycle << ", Instruction: " << instructions[core] << endl;
-            // }
+            if (cycle % 100000 == 0)
+            {
+                 cout << "Core " << core << " Cycle: " << cycle << ", Instruction: " << instructions[core] << endl;
+            }
             continue;
         }
         corePendingOperation[core] = addr;
@@ -255,7 +260,7 @@ void bus()
             busDataQueue.erase(busDataQueue.begin());
             if (busDataQueue.size() > 0)
             {
-                cout << busDataQueue.size() << endl;
+                cout << "busDataQueue: " << busDataQueue.size() << endl;
             }
             if (busDataQueue.empty())
             {
