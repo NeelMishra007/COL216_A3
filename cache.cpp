@@ -44,7 +44,7 @@ int parseHexAddress(const string &address)
     return addr_val;
 }
 
-void handle_read_miss(int core, int index, int tag)
+int handle_read_miss(int core, int index, int tag)
 {
     Cache &cache = caches[core];
     int target_line = -1;
@@ -88,11 +88,13 @@ void handle_read_miss(int core, int index, int tag)
 
     // Load the block from memory and update metadata
     cache.tags[index][target_line] = tag;
+    //cout << " " << "hi" << cache.tags[index][target_line] << endl;
     cache.dirty[index][target_line] = false; // It's a read miss
     cache.lru[index].push_back(target_line); // Mark as most recently used
+    return target_line; // Return the target line index
 }
 
-void handle_write_miss(int core, int index, int tag)
+int handle_write_miss(int core, int index, int tag)
 {
     Cache &cache = caches[core];
     int target_line = -1;
@@ -134,6 +136,7 @@ void handle_write_miss(int core, int index, int tag)
     cache.tags[index][target_line] = tag;
     cache.dirty[index][target_line] = true;  // It's a write miss
     cache.lru[index].push_back(target_line); // Mark as most recently used
+    return target_line;
 }
 
 void run(pair<char, const char *> entry, int core)
@@ -153,13 +156,13 @@ void run(pair<char, const char *> entry, int core)
     // Increment read/write counters
     if (cycle2 % 100000 == 0)
     {
-        cout << "Core " << core << " Access Type: " << accessType << ", Address: " << address << " " << caches[core].stall << endl;
+        //cout << "Core " << core << " Access Type: " << accessType << ", Address: " << address << " " << caches[core].stall << endl;
     }
 
     // Extract index and tag fields from the address
     int index = (addr >> b) & ((1 << s) - 1); // index bits
     int tag = addr >> (s + b);                // tag bits
-
+    //cout << index << " " << tag << endl;
     bool hit = false;
     int hit_line = -1;
 
@@ -193,6 +196,7 @@ void run(pair<char, const char *> entry, int core)
         }
         else
         {
+            //cout << "Core " << core << " Access Type: " << accessType << ", Address: " << address << " " << caches[core].stall << endl;
             busQueue.push_back(BusReq{core, addr, BusReqType::BusRd});
             caches[core].stall = true; // Set the stall flag for the requesting core
         }
@@ -214,9 +218,9 @@ void run(pair<char, const char *> entry, int core)
         {
             if (cycle2 % 100000 == 0)
             {
-                cout << "Core " << core << " Access Type: " << accessType << ", Address: " << address << " " << "hit" << endl;
+                //cout << "Core " << core << " Access Type: " << accessType << ", Address: " << address << " " << "hit" << endl;
             }
-            
+
             // Cache hit: update the LRU order and mark the block as dirty
             if (mesiState[core][index][hit_line] == MESIState::E || mesiState[core][index][hit_line] == MESIState::M)
             {
@@ -243,7 +247,7 @@ void run(pair<char, const char *> entry, int core)
         }
         else
         {
-
+            //cout << "Core " << core << " Access Type: " << accessType << ", Address: " << address << " " << caches[core].stall << endl;
             busQueue.push_back(BusReq{core, addr, BusReqType::BusRdX});
             caches[core].stall = true;
         }

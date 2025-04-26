@@ -27,10 +27,10 @@ void bus()
         int addr = busReq.address;
         BusReqType type = busReq.type;
 
-        if (busReq.address == 0x7f13d768)
-        {
-             cout << "Core " << core << " Cycle: " << cycle << ", Instruction: " << instructions[core] << endl;
-        }
+        //if (busReq.address == 0x7f13d768)
+        //{
+             //cout << "Core " << core << " Cycle: " << cycle << ", Instruction: " << instructions[core] << endl;
+        //}
 
         int index = (addr >> b) & ((1 << s) - 1);
         int tag = addr >> (s + b);
@@ -78,10 +78,10 @@ void bus()
         if (bus_busy)
         {
             caches[core].stall = true;
-            if (cycle % 100000 == 0)
-            {
-                 cout << "Core " << core << " Cycle: " << cycle << ", Instruction: " << instructions[core] << endl;
-            }
+            //if (cycle % 100000 == 0)
+            //{
+                 //cout << "Core " << core << " Cycle: " << cycle << ", Instruction: " << instructions[core] << endl;
+            //}
             continue;
         }
         corePendingOperation[core] = addr;
@@ -199,13 +199,13 @@ void bus()
                 // Process read or write miss
                 if (isWrite)
                 {
-                    handle_write_miss(core, index, tag);
-                    mesiState[core][index][0] = MESIState::M; // Set to Modified state
+                    int way = handle_write_miss(core, index, tag);
+                    mesiState[core][index][way] = MESIState::M; // Set to Modified state
                 }
                 else
                 {
-                    handle_read_miss(core, index, tag);
-
+                    int way = handle_read_miss(core, index, tag);
+                    //cout << core << " " << index << " " << tag << endl;
                     // Check if other caches have the data to determine state
                     bool otherCachesHaveData = false;
                     for (int j = 0; j < 4; j++)
@@ -228,11 +228,12 @@ void bus()
                     // Set to Exclusive if no other cache has it, Shared otherwise
                     if (otherCachesHaveData)
                     {
-                        mesiState[core][index][0] = MESIState::S;
+                        mesiState[core][index][way] = MESIState::S;
                     }
                     else
                     {
-                        mesiState[core][index][0] = MESIState::E;
+                        mesiState[core][index][way] = MESIState::E;
+                        //cout << " " << "hi2" << core << " " << index << " " << tag << endl; 
                     }
                 }
 
@@ -260,7 +261,7 @@ void bus()
             busDataQueue.erase(busDataQueue.begin());
             if (busDataQueue.size() > 0)
             {
-                cout << "busDataQueue: " << busDataQueue.size() << endl;
+                //cout << "busDataQueue: " << busDataQueue.size() << endl;
             }
             if (busDataQueue.empty())
             {
