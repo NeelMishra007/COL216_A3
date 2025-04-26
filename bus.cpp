@@ -19,7 +19,7 @@ void bus()
         BusReq busReq = busQueue.front();
         busQueue.erase(busQueue.begin());
 
-        cout << "busReq: " << busReq.coreId << " " << busReq.address << " " << (int)busReq.type << endl;
+        //cout << "busReq: " << busReq.coreId << " " << busReq.address << " " << (int)busReq.type << endl;
         //cout << bus_busy << endl;
         int core = busReq.coreId;
         int addr = busReq.address;

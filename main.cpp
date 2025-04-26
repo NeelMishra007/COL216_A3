@@ -107,6 +107,10 @@ void simulateMulticore()
 
     while (simActive)
     {
+        if (globalCycle % 100000 == 0) {
+            cout << coreActive[0] << " " << coreActive[1] << " " << coreActive[2] << " " << coreActive[3] << endl;
+        }
+        //cout << coreActive[0] << " " << coreActive[1] << " " << coreActive[2] << " " << coreActive[3] << endl;
         //cout << globalCycle << endl;
         // Process each core in round-robin fashion
         for (int i = 0; i < 4; i++)
@@ -129,7 +133,7 @@ void simulateMulticore()
             else
             {
                 coreActive[i] = false;
-                //cout << i << endl;
+                cout << i << endl;
             }
         }
 
