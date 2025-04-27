@@ -5,14 +5,14 @@ import matplotlib.pyplot as plt
 import os
 
 # Configuration
-EXECUTABLE = "./cache_simulator"  # Path to the simulator executable
+EXECUTABLE = "./cache_simulator.exe"  # Path to the simulator executable
 TRACE_PREFIX = "app1"       # Trace file prefix (e.g., app_proc0.trace)
 RESULTS_FILE = "cache_sim_results.csv"
 PLOT_DIR = "plots"         # Directory to save plots
 
 # Parameter values to vary (3 values each, including default)
-S_VALUES = [2, 3, 4]       # Set index bits
-E_VALUES = [2, 4, 8]       # Associativity
+S_VALUES = [ 4 , 6 , 8]       # Set index bits
+E_VALUES = [2, 4, 6]       # Associativity
 B_VALUES = [4, 5, 6]       # Block bits
 
 # Default parameters

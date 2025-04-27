@@ -1,0 +1,10 @@
+Parameter,Value,MaxExecutionTime,CacheSize
+SetIndexBits,4,89449117,1024
+SetIndexBits,6,15397254,4096
+SetIndexBits,8,10022069,16384
+Associativity,2,15397254,4096
+Associativity,4,10349538,8192
+Associativity,6,5010569,12288
+BlockBits,4,42270316,2048
+BlockBits,5,15397254,4096
+BlockBits,6,14675120,8192
