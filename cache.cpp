@@ -44,7 +44,7 @@ int parseHexAddress(const string &address)
     return addr_val;
 }
 
-int handle_read_miss(int core, int index, int tag)
+int handle_read_miss(int core, int index, int tag, bool &iswriteback)
 {
     Cache &cache = caches[core];
     int target_line = -1;
@@ -72,6 +72,7 @@ int handle_read_miss(int core, int index, int tag)
             int old_tag = cache.tags[index][target_line];
             int old_addr = (old_tag << (s + b)) | (index << b);
             busDataQueue.push_back(BusData{old_addr, core, false, true, 100}); // Writeback data
+            iswriteback = true;                                                // Indicate that a writeback occurred
         }
     }
     else
@@ -92,7 +93,7 @@ int handle_read_miss(int core, int index, int tag)
     return target_line;                      // Return the target line index
 }
 
-int handle_write_miss(int core, int index, int tag)
+int handle_write_miss(int core, int index, int tag, bool &iswriteback)
 {
     Cache &cache = caches[core];
     int target_line = -1;
@@ -118,6 +119,7 @@ int handle_write_miss(int core, int index, int tag)
             int old_tag = cache.tags[index][target_line];
             int old_addr = (old_tag << (s + b)) | (index << b);
             busDataQueue.push_back(BusData{old_addr, core, false, true, 100}); // Writeback data
+            iswriteback = true;                                                // Indicate that a writeback occurred
         }
     }
     else

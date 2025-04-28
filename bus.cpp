@@ -186,6 +186,7 @@ void bus()
             bool isWrite = busData.write;
             bool isWriteback = busData.writeback;
             data_traffic_bytes[core] += caches[core].blockSize; // Add writeback traffic
+            bool evictwriteback = false;
             // Process completed bus data transfer
             if (!isWriteback)
             {
@@ -196,12 +197,12 @@ void bus()
                 // Process read or write miss
                 if (isWrite)
                 {
-                    int way = handle_write_miss(core, index, tag);
+                    int way = handle_write_miss(core, index, tag, evictwriteback);
                     mesiState[core][index][way] = MESIState::M; // Set to Modified state
                 }
                 else
                 {
-                    int way = handle_read_miss(core, index, tag);
+                    int way = handle_read_miss(core, index, tag, evictwriteback);
                     // cout << core << " " << index << " " << tag << endl;
                     //  Check if other caches have the data to determine state
                     bool otherCachesHaveData = false;
@@ -241,6 +242,13 @@ void bus()
 
                 // Clear pending operation for this core
                 corePendingOperation[core] = -1;
+                if (evictwriteback)
+                {
+                    // Handle writeback completion
+                    // Just clear stall flag as writeback is complete
+                    caches[core].stall = true;
+                    corePendingOperation[core] = -1;
+                }
             }
             else
             {
