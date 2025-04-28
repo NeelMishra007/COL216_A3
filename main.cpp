@@ -116,7 +116,7 @@ void simulateMulticore()
     {
         if (globalCycle % 100000 == 0)
         {
-            cout << coreActive[0] << " " << coreActive[1] << " " << coreActive[2] << " " << coreActive[3] << endl;
+            //cout << coreActive[0] << " " << coreActive[1] << " " << coreActive[2] << " " << coreActive[3] << endl;
         }
         // cout << coreActive[0] << " " << coreActive[1] << " " << coreActive[2] << " " << coreActive[3] << endl;
         // cout << globalCycle << endl;
@@ -136,16 +136,16 @@ void simulateMulticore()
                 // Get the current operation for this core
                 pair<char, const char *> currentOp = traces[i][tracePos[i]];
                 // Execute the operation
-                // if (globalCycle % 100000 == 0)
-                // {
-                //     cout << "Core " << i << " Cycle: " << globalCycle << ", Instruction: " << tracePos[i] << endl;
-                // }
+                if (globalCycle % 100000 == 0)
+                {
+                    //cout << "Core " << i << " Cycle: " << globalCycle << ", Instruction: " << tracePos[i] << endl;
+                }
                 run(currentOp, i);
             }
             else
             {
                 coreActive[i] = false;
-                cout << i << endl;
+                //cout << i << endl;
             }
         }
 
@@ -155,11 +155,6 @@ void simulateMulticore()
 
             if (!caches[i].stall && coreActive[i])
             {
-                if (tracePos[i] % 100000 == 0)
-                {
-                    cout << "Core " << i << " Cycle: " << globalCycle << ", Instruction: " << tracePos[i] << endl;
-                }
-                // cout << i << " " << tracePos[i] << endl;
                 tracePos[i]++;
                 instructions[i]++;
                 if (tracePos[i] == traces[i].size())

@@ -23,23 +23,14 @@ int cycle2 = 0;
 int parseHexAddress(const string &address)
 {
     string hexPart = address;
-
-    // Remove "0x" prefix if present
     if (hexPart.length() >= 2 && (hexPart.substr(0, 2) == "0x" || hexPart.substr(0, 2) == "0X"))
     {
         hexPart = hexPart.substr(2);
     }
-
-    // Convert hex string to integer
     int addr_val = stoul(hexPart, nullptr, 16);
-
-    // Format with leading zeros using stringstream (for debug output)
     stringstream ss;
     ss << "0x" << setfill('0') << setw(8) << hex << addr_val;
     string paddedAddress = ss.str();
-
-    // Display the padded address (consider making this optional or removing for production)
-    // cout << "Padded Address: " << paddedAddress << endl;
 
     return addr_val;
 }
@@ -71,7 +62,7 @@ int handle_read_miss(int core, int index, int tag, bool &iswriteback)
             caches[core].stall = true; // Set the stall flag for the requesting core
             int old_tag = cache.tags[index][target_line];
             int old_addr = (old_tag << (s + b)) | (index << b);
-            busDataQueue.push_back(BusData{old_addr, core, false, true, 100}); // Writeback data
+            busDataQueue.push_back(BusData{old_addr, core, false, true, false, 100}); // Writeback data
             iswriteback = true;                                                // Indicate that a writeback occurred
         }
     }
@@ -118,7 +109,7 @@ int handle_write_miss(int core, int index, int tag, bool &iswriteback)
         {
             int old_tag = cache.tags[index][target_line];
             int old_addr = (old_tag << (s + b)) | (index << b);
-            busDataQueue.push_back(BusData{old_addr, core, false, true, 100}); // Writeback data
+            busDataQueue.push_back(BusData{old_addr, core, false, true, false, 100}); // Writeback data
             iswriteback = true;                                                // Indicate that a writeback occurred
         }
     }
@@ -156,7 +147,7 @@ void run(pair<char, const char *> entry, int core)
     // Increment read/write counters
     if (cycle2 % 100000 == 0)
     {
-        // cout << "Core " << core << " Access Type: " << accessType << ", Address: " << address << " " << caches[core].stall << endl;
+        //cout << "Core " << core << " Access Type: " << accessType << ", Address: " << address << " " << caches[core].stall << endl;
     }
 
     // Extract index and tag fields from the address
@@ -242,7 +233,7 @@ void run(pair<char, const char *> entry, int core)
             {
                 // If the block is in the S state, send a BusUpgr request to upgrade it to M state
                 busQueue.push_back(BusReq{core, addr, BusReqType::BusUpgr});
-                caches[core].stall = true;
+                //caches[core].stall = true;
                 // Update the LRU order for the block
                 auto it = find(cache.lru[index].begin(), cache.lru[index].end(), hit_line);
                 if (it != cache.lru[index].end())

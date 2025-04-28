@@ -25,6 +25,7 @@ struct BusData {
     int coreId;      // ID of the core receiving the data
     bool write;            // Read or write operation
     bool writeback;       // Indicates if the data is being written back to memory
+    bool inv;
     int stalls;           // Number of stalls for the bus transaction
 };
 
