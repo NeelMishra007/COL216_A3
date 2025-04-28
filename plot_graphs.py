@@ -6,14 +6,14 @@ import os
 
 # Configuration
 EXECUTABLE = "./cache_simulator.exe"  # Path to the simulator executable
-TRACE_PREFIX = "app1"       # Trace file prefix (e.g., app_proc0.trace)
-RESULTS_FILE = "cache_sim_results.csv"
+TRACE_PREFIX = "input"       # Trace file prefix (e.g., app_proc0.trace)
+RESULTS_FILE = "cache_sim2_results.csv"
 PLOT_DIR = "plots"         # Directory to save plots
 
 # Parameter values to vary (3 values each, including default)
-S_VALUES = [ 4 , 6 , 8]       # Set index bits
-E_VALUES = [2, 4, 6]       # Associativity
-B_VALUES = [4, 5, 6]       # Block bits
+S_VALUES = list(range(1, 12))
+E_VALUES = list(range(1, 101))       # Associativity
+B_VALUES = list(range(2, 14))              # Block bits
 
 # Default parameters
 DEFAULT_S = 6
@@ -108,7 +108,7 @@ plt.ylabel('Maximum Execution Time (cycles)')
 plt.title('Maximum Execution Time vs. Set Index Bits')
 plt.grid(True)
 plt.legend()
-plt.savefig(os.path.join(PLOT_DIR, 'set_index_bits.png'))
+plt.savefig(os.path.join(PLOT_DIR, 'set_index_bits2.png'))
 plt.close()
 
 # Plot 2: Maximum Execution Time vs. Associativity
@@ -119,7 +119,7 @@ plt.ylabel('Maximum Execution Time (cycles)')
 plt.title('Maximum Execution Time vs. Associativity')
 plt.grid(True)
 plt.legend()
-plt.savefig(os.path.join(PLOT_DIR, 'associativity.png'))
+plt.savefig(os.path.join(PLOT_DIR, 'associativity2.png'))
 plt.close()
 
 # Plot 3: Maximum Execution Time vs. Block Bits
@@ -130,7 +130,7 @@ plt.ylabel('Maximum Execution Time (cycles)')
 plt.title('Maximum Execution Time vs. Block Bits')
 plt.grid(True)
 plt.legend()
-plt.savefig(os.path.join(PLOT_DIR, 'block_bits.png'))
+plt.savefig(os.path.join(PLOT_DIR, 'block_bits2.png'))
 plt.close()
 
 # Plot 4: Maximum Execution Time vs. Cache Size
@@ -143,7 +143,7 @@ plt.ylabel('Maximum Execution Time (cycles)')
 plt.title('Maximum Execution Time vs. Cache Size')
 plt.legend()
 plt.grid(True)
-plt.savefig(os.path.join(PLOT_DIR, 'cache_size.png'))
+plt.savefig(os.path.join(PLOT_DIR, 'cache_size2.png'))
 plt.close()
 
 print(f"Plots saved in {PLOT_DIR}/: set_index_bits.png, associativity.png, block_bits.png, cache_size.png")

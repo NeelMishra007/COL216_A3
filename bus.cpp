@@ -34,19 +34,56 @@ void bus()
 
         int index = (addr >> b) & ((1 << s) - 1);
         int tag = addr >> (s + b);
+        if (type == BusReqType::BusUpgr)
+        {
+            // Find the cache line that needs to be upgraded
+            int target_line = -1;
+            for (int j = 0; j < E; j++)
+            {
+                if (caches[core].tags[index][j] == tag && mesiState[core][index][j] == MESIState::S)
+                {
+                    target_line = j;
+                    break;
+                }
+            }
 
-        if (bus_busy)
+            if (target_line != -1)
+            {
+                total_bus_transactions++; // Increment bus transaction counter
+
+                // Invalidate copies in other caches
+                for (int i = 0; i < 4; i++)
+                {
+                    if (i != core)
+                    {
+                        for (int j = 0; j < E; j++)
+                        {
+                            if (caches[i].tags[index][j] == tag && mesiState[i][index][j] != MESIState::I)
+                            {
+                                mesiState[i][index][j] = MESIState::I; // Invalidate the line in other caches
+                                // bus_invalidations[i]++;                // Increment invalidation counter
+                            }
+                        }
+                    }
+                }
+
+                // Upgrade the state to Modified
+                bus_invalidations[core]++; // Increment invalidation counter
+                mesiState[core][index][target_line] = MESIState::M;
+                caches[core].dirty[index][target_line] = true; // Mark the line as dirty
+                caches[core].stall = false;                    // Clear the stall since operation completes immediately
+                corePendingOperation[core] = -1;               // Clear pending operation for this core
+            }
+        }
+
+        if (bus_busy && type != BusReqType::BusUpgr)
         {
             caches[core].stall = true;
-            // if (cycle % 100000 == 0)
-            //{
-            // cout << "Core " << core << " Cycle: " << cycle << ", Instruction: " << instructions[core] << endl;
-            //}
             continue;
         }
-        corePendingOperation[core] = addr;
         if (type == BusReqType::BusRd)
         {
+            corePendingOperation[core] = addr;
             bus_busy = true;
             total_bus_transactions++; // Increment bus transaction counter
             cache_misses[core]++;     // Increment miss counter
@@ -96,6 +133,7 @@ void bus()
         }
         else if (type == BusReqType::BusRdX)
         {
+            corePendingOperation[core] = addr;
             bus_busy = true;
             total_bus_transactions++; // Increment bus transaction counter
             bool found = false;
@@ -129,47 +167,6 @@ void bus()
             if (found)
                 bus_invalidations[core]++; // Increment invalidation counter
             busDataQueue.push_back(BusData{addr, core, true, false, 100});
-        }
-        else if (type == BusReqType::BusUpgr)
-        {
-            // Find the cache line that needs to be upgraded
-            int target_line = -1;
-            for (int j = 0; j < E; j++)
-            {
-                if (caches[core].tags[index][j] == tag && mesiState[core][index][j] == MESIState::S)
-                {
-                    target_line = j;
-                    break;
-                }
-            }
-
-            if (target_line != -1)
-            {
-                total_bus_transactions++; // Increment bus transaction counter
-
-                // Invalidate copies in other caches
-                for (int i = 0; i < 4; i++)
-                {
-                    if (i != core)
-                    {
-                        for (int j = 0; j < E; j++)
-                        {
-                            if (caches[i].tags[index][j] == tag && mesiState[i][index][j] != MESIState::I)
-                            {
-                                mesiState[i][index][j] = MESIState::I; // Invalidate the line in other caches
-                                // bus_invalidations[i]++;                // Increment invalidation counter
-                            }
-                        }
-                    }
-                }
-
-                // Upgrade the state to Modified
-                bus_invalidations[core]++; // Increment invalidation counter
-                mesiState[core][index][target_line] = MESIState::M;
-                caches[core].dirty[index][target_line] = true; // Mark the line as dirty
-                caches[core].stall = false;                    // Clear the stall since operation completes immediately
-                corePendingOperation[core] = -1;               // Clear pending operation for this core
-            }
         }
     }
     // Handle a single bus data operation if any
