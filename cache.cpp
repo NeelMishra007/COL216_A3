@@ -242,6 +242,14 @@ void run(pair<char, const char *> entry, int core)
             {
                 // If the block is in the S state, send a BusUpgr request to upgrade it to M state
                 busQueue.push_back(BusReq{core, addr, BusReqType::BusUpgr});
+                caches[core].stall = true;
+                // Update the LRU order for the block
+                auto it = find(cache.lru[index].begin(), cache.lru[index].end(), hit_line);
+                if (it != cache.lru[index].end())
+                {
+                    cache.lru[index].erase(it);
+                }
+                cache.lru[index].push_back(hit_line);
             }
         }
         else
