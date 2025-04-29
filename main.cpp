@@ -40,6 +40,7 @@ vector<int> cache_evictions(4, 0);
 vector<int> writebacks(4, 0);
 vector<int> bus_invalidations(4, 0);
 vector<long long> data_traffic_bytes(4, 0);
+vector<int> idle_cycles(4, 0);
 int total_bus_transactions = 0;
 long long total_bus_traffic_bytes = 0;
 
@@ -111,12 +112,13 @@ void simulateMulticore()
     // Main simulation loop
     bool simActive = true;
     int globalCycle = 0;
+    int maxtime = 0;
 
     while (simActive)
     {
         if (globalCycle % 100000 == 0)
         {
-            //cout << coreActive[0] << " " << coreActive[1] << " " << coreActive[2] << " " << coreActive[3] << endl;
+            // cout << coreActive[0] << " " << coreActive[1] << " " << coreActive[2] << " " << coreActive[3] << endl;
         }
         // cout << coreActive[0] << " " << coreActive[1] << " " << coreActive[2] << " " << coreActive[3] << endl;
         // cout << globalCycle << endl;
@@ -138,18 +140,19 @@ void simulateMulticore()
                 // Execute the operation
                 if (globalCycle % 100000 == 0)
                 {
-                    //cout << "Core " << i << " Cycle: " << globalCycle << ", Instruction: " << tracePos[i] << endl;
+                    // cout << "Core " << i << " Cycle: " << globalCycle << ", Instruction: " << tracePos[i] << endl;
                 }
                 run(currentOp, i);
             }
             else
             {
                 coreActive[i] = false;
-                //cout << i << endl;
+                // cout << i << endl;
             }
         }
 
         bus();
+
         for (int i = 0; i < 4; i++)
         {
 
@@ -159,7 +162,7 @@ void simulateMulticore()
                 instructions[i]++;
                 if (tracePos[i] == traces[i].size())
                 {
-                    clockCycles[i] = globalCycle;
+                    maxtime = max(maxtime, globalCycle);
                 }
             }
         }
@@ -193,7 +196,6 @@ void simulateMulticore()
             }
         }
     }
-    int maxtime = 0;
     // Print final statistics
     cout << "\n===== Simulation Results =====\n";
     cout << "Total simulation cycles: " << globalCycle - 1 << endl;
@@ -203,7 +205,7 @@ void simulateMulticore()
         cout << "Core " << i << ":\n";
         cout << "  Instructions executed: " << instructions[i] << endl;
         cout << endl;
-        maxtime = max(maxtime, clockCycles[i]);
+        // maxtime = max(maxtime, clockCycles[i]);
     }
     string trace_prefix = "app"; // Replace with tracefile from command-line if available
     int block_size = 1 << b;
@@ -229,11 +231,11 @@ void simulateMulticore()
         cout << "Total Instructions: " << instructions[i] << "\n";
         cout << "Total Reads: " << num_reads[i] << "\n";
         cout << "Total Writes: " << num_writes[i] << "\n";
-        cout << "Total Execution Cycles: " << clockCycles[i] << "\n";
-        cout << "Idle Cycles: " << (globalCycle - 1 - clockCycles[i]) << "\n";
+        cout << "Total Execution Cycles: " << clockCycles[i] + instructions[i] << "\n";
+        cout << "Idle Cycles: " << (idle_cycles[i]) << "\n";
         cout << "Cache Misses: " << cache_misses[i] << "\n";
         double miss_rate = (num_reads[i] + num_writes[i] > 0) ? (cache_misses[i] * 100.0) / (num_reads[i] + num_writes[i]) : 0.0;
-        cout << fixed << setprecision(2) << "Cache Miss Rate: " << miss_rate << "%\n";
+        cout << fixed << setprecision(5) << "Cache Miss Rate: " << miss_rate << "%\n";
         cout << "Cache Evictions: " << cache_evictions[i] << "\n";
         cout << "Writebacks: " << writebacks[i] << "\n";
         cout << "Bus Invalidations: " << bus_invalidations[i] << "\n";

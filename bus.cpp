@@ -24,7 +24,7 @@ void bus()
 
         if (cycle % 100000 == 0)
         {
-            //cout << "Bus: " << busReq.coreId << " " << busReq.address << " " << (int)busReq.type << endl;
+            // cout << "Bus: " << busReq.coreId << " " << busReq.address << " " << (int)busReq.type << endl;
         }
         // cout << bus_busy << endl;
         int core = busReq.coreId;
@@ -37,6 +37,7 @@ void bus()
         if (bus_busy)
         {
             caches[core].stall = true;
+            idle_cycles[core]++;
             continue;
         }
         corePendingOperation[core] = addr;
@@ -55,14 +56,14 @@ void bus()
                         if (caches[i].tags[index][j] == tag && mesiState[i][index][j] != MESIState::I)
                         {
                             found = true;
-                            caches[core].stall = true; // Set the stall flag for the requesting core
+                            caches[core].stall = true;                                                      // Set the stall flag for the requesting core
                             busDataQueue.push_back(BusData{addr, core, false, false, false, 1 << (b - 1)}); // Send data to the requesting core
                             data_traffic_bytes[i] += caches[i].blockSize;
                             if (mesiState[i][index][j] == MESIState::M)
                             {
                                 // Send BusRd to share the line with the requesting core
                                 mesiState[i][index][j] = MESIState::S;
-                                caches[i].stall = true;                                     // Set the stall flag for the core
+                                caches[i].stall = true;                                            // Set the stall flag for the core
                                 busDataQueue.push_back(BusData{addr, i, false, true, false, 100}); // Writeback data
                                 corePendingOperation[i] = addr;
                             }
@@ -107,7 +108,7 @@ void bus()
                             if (mesiState[i][index][j] == MESIState::M)
                             {
                                 // Send BusRd to share the line with the requesting core
-                                caches[i].stall = true;                                     // Set the stall flag for the core
+                                caches[i].stall = true;                                            // Set the stall flag for the core
                                 busDataQueue.push_back(BusData{addr, i, false, true, false, 100}); // Writeback data
                                 corePendingOperation[i] = addr;
                             }
@@ -161,9 +162,9 @@ void bus()
                 bus_busy = true;
                 mesiState[core][index][target_line] = MESIState::M;
                 caches[core].dirty[index][target_line] = true; // Mark the line as dirty
-                caches[core].stall = true;                  
+                caches[core].stall = true;
                 busDataQueue.push_back(BusData{addr, core, false, false, true, 0}); // Inv
-                corePendingOperation[core] = 1;             
+                corePendingOperation[core] = 1;
             }
         }
     }
@@ -221,7 +222,7 @@ void bus()
                     }
                 }
                 caches[core].stall = false;
-                clockCycles[core]++;
+                // clockCycles[core]++;
                 corePendingOperation[core] = -1;
                 if (evictwriteback)
                 {
@@ -229,9 +230,9 @@ void bus()
                     corePendingOperation[core] = 1;
                 }
             }
-            else 
+            else
             {
-                writebacks[core]++; 
+                writebacks[core]++;
                 caches[core].stall = false;
                 corePendingOperation[core] = -1;
             }

@@ -63,7 +63,7 @@ int handle_read_miss(int core, int index, int tag, bool &iswriteback)
             int old_tag = cache.tags[index][target_line];
             int old_addr = (old_tag << (s + b)) | (index << b);
             busDataQueue.push_back(BusData{old_addr, core, false, true, false, 100}); // Writeback data
-            iswriteback = true;                                                // Indicate that a writeback occurred
+            iswriteback = true;                                                       // Indicate that a writeback occurred
         }
     }
     else
@@ -110,7 +110,7 @@ int handle_write_miss(int core, int index, int tag, bool &iswriteback)
             int old_tag = cache.tags[index][target_line];
             int old_addr = (old_tag << (s + b)) | (index << b);
             busDataQueue.push_back(BusData{old_addr, core, false, true, false, 100}); // Writeback data
-            iswriteback = true;                                                // Indicate that a writeback occurred
+            iswriteback = true;                                                       // Indicate that a writeback occurred
         }
     }
     else
@@ -142,12 +142,13 @@ void run(pair<char, const char *> entry, int core)
     // If this core already has a pending operation, skip issuing a new request
     if (corePendingOperation[core] != -1)
     {
+        clockCycles[core]++;
         return;
     }
     // Increment read/write counters
     if (cycle2 % 100000 == 0)
     {
-        //cout << "Core " << core << " Access Type: " << accessType << ", Address: " << address << " " << caches[core].stall << endl;
+        // cout << "Core " << core << " Access Type: " << accessType << ", Address: " << address << " " << caches[core].stall << endl;
     }
 
     // Extract index and tag fields from the address
@@ -182,7 +183,7 @@ void run(pair<char, const char *> entry, int core)
                 cache.lru[index].erase(it);
             }
             cache.lru[index].push_back(hit_line);
-            clockCycles[core]++;
+            // clockCycles[core]++;
             // caches[core].stall = false;
         }
         else
@@ -226,15 +227,15 @@ void run(pair<char, const char *> entry, int core)
                 {
                     mesiState[core][index][hit_line] = MESIState::M; // Upgrade to M state
                 }
-                clockCycles[core]++;
+                // clockCycles[core]++;
                 // caches[core].stall = false;
             }
             else
             {
                 // If the block is in the S state, send a BusUpgr request to upgrade it to M state
                 busQueue.push_back(BusReq{core, addr, BusReqType::BusUpgr});
-                //caches[core].stall = true;
-                // Update the LRU order for the block
+                // caches[core].stall = true;
+                //  Update the LRU order for the block
                 auto it = find(cache.lru[index].begin(), cache.lru[index].end(), hit_line);
                 if (it != cache.lru[index].end())
                 {
