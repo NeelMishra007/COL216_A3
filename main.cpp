@@ -44,6 +44,8 @@ vector<int> idle_cycles(4, 0);
 int total_bus_transactions = 0;
 long long total_bus_traffic_bytes = 0;
 
+vector<bool> coreActive(4, true);
+
 // Function to load trace files based on prefix
 bool loadTraceFiles(const string &tracePrefix)
 {
@@ -107,7 +109,6 @@ void simulateMulticore()
         trace1, trace2, trace3, trace4};
 
     // Track if each core has more instructions
-    vector<bool> coreActive(4, true);
 
     // Main simulation loop
     bool simActive = true;
@@ -162,7 +163,7 @@ void simulateMulticore()
                 instructions[i]++;
                 if (tracePos[i] == traces[i].size())
                 {
-                    maxtime = max(maxtime, globalCycle);
+                    coreActive[i] = false; // Mark core as inactive if all instructions are executed
                 }
             }
         }

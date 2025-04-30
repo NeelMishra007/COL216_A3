@@ -65,6 +65,11 @@ void bus()
                                 mesiState[i][index][j] = MESIState::S;
                                 caches[i].stall = true;                                            // Set the stall flag for the core
                                 busDataQueue.push_back(BusData{addr, i, false, true, false, 100}); // Writeback data
+                                if (coreActive[i])
+                                {
+                                    clockCycles[i] -= ((1 << (b - 1)) + 101);
+                                    idle_cycles[i] += (1 << (b - 1)) + 1;
+                                }
                                 corePendingOperation[i] = addr;
                             }
                             else if (mesiState[i][index][j] == MESIState::E)
@@ -110,6 +115,8 @@ void bus()
                                 // Send BusRd to share the line with the requesting core
                                 caches[i].stall = true;                                            // Set the stall flag for the core
                                 busDataQueue.push_back(BusData{addr, i, false, true, false, 100}); // Writeback data
+                                if (coreActive[i])
+                                    clockCycles[i] -= 101;
                                 corePendingOperation[i] = addr;
                             }
 

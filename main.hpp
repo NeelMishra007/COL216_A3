@@ -78,4 +78,5 @@ extern vector<int> idle_cycles;
 extern int total_bus_transactions;
 extern long long total_bus_traffic_bytes;
 
+extern vector<bool> coreActive;
 #endif // MAIN_HPP
