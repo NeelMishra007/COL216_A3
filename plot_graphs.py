@@ -6,19 +6,56 @@ import os
 
 # Configuration
 EXECUTABLE = "./cache_simulator.exe"  # Path to the simulator executable
-TRACE_PREFIX = "input"       # Trace file prefix (e.g., app_proc0.trace)
-RESULTS_FILE = "cache_sim2_results.csv"
-PLOT_DIR = "plots"         # Directory to save plots
+TRACE_PREFIX = "input"               # Trace file prefix (e.g., input_proc0.trace)
+RESULTS_FILE = "cache_sim1_results.csv"
+PLOT_DIR = "plots"                   # Directory to save plots
+CONSTANT_CACHE_SIZE = 4096           # Fixed cache size in bytes (2^6 * 2 * 2^5 = 4096)
 
-# Parameter values to vary (3 values each, including default)
-S_VALUES = list(range(1, 12))
-E_VALUES = list(range(1, 101))       # Associativity
-B_VALUES = list(range(2, 14))              # Block bits
+# Parameter values for independent variations
+S_VALUES = list(range(1, 12))        # Set index bits: 1 to 11
+E_VALUES = list(range(1, 101))       # Associativity: 1 to 100
+B_VALUES = list(range(1, 16))        # Block bits: 1 to 15
 
 # Default parameters
 DEFAULT_S = 6
 DEFAULT_E = 2
 DEFAULT_B = 5
+
+# Configurations for constant cache size
+# s and b (fix E=2): s=6,b=5; s=7,b=4; s=8,b=3; s=9,b=2
+SB_CONST_CONFIGS = [
+    {"s": 1, "E": 2, "b": 10},
+    {"s": 2, "E": 2, "b": 9},
+    {"s": 3, "E": 2, "b": 8},
+    {"s": 4, "E": 2, "b": 7},
+    {"s": 5, "E": 2, "b": 6},
+    {"s": 6, "E": 2, "b": 5},
+    {"s": 7, "E": 2, "b": 4},
+    {"s": 8, "E": 2, "b": 3},
+    {"s": 9, "E": 2, "b": 2},
+    {"s": 10, "E": 2, "b": 1}
+]
+
+# b and E (fix s=6): b=5,E=2; b=4,E=4; b=3,E=8; b=2,E=16
+BE_CONST_CONFIGS = [
+    {"s": 6, "E": 1, "b": 6},
+    {"s": 6, "E": 2, "b": 5},
+    {"s": 6, "E": 4, "b": 4},
+    {"s": 6, "E": 8, "b": 3},
+    {"s": 6, "E": 16, "b": 2},
+    {"s": 6, "E": 32, "b": 1}
+]
+
+# s and E (fix b=5): s=3,E=16; s=4,E=8; s=5,E=4; s=6,E=2
+SE_CONST_CONFIGS = [
+    {"s": 1, "E": 64, "b": 5},
+    {"s": 2, "E": 32, "b": 5},
+    {"s": 3, "E": 16, "b": 5},
+    {"s": 4, "E": 8, "b": 5},
+    {"s": 5, "E": 4, "b": 5},
+    {"s": 6, "E": 2, "b": 5},
+    {"s": 7, "E": 1, "b": 5}
+]
 
 # Ensure plot directory exists
 if not os.path.exists(PLOT_DIR):
@@ -43,7 +80,7 @@ def run_simulation(param, value, s, E, b):
             return None
         max_time = int(match.group(1))
         
-        return {"Parameter": param, "Value": value, "MaxExecutionTime": max_time, "CacheSize": cache_size}
+        return {"Parameter": param, "Value": value, "MaxExecutionTime": max_time, "CacheSize": cache_size, "s": s, "E": E, "b": b}
     
     except subprocess.CalledProcessError as e:
         print(f"Error: Simulation failed for {param}={value}. Error: {e}")
@@ -67,21 +104,42 @@ if not os.path.exists(EXECUTABLE):
 # Collect results
 results = []
 
-# Vary set index bits (s)
+# Vary set index bits (s) independently
 for s in S_VALUES:
     result = run_simulation("SetIndexBits", s, s, DEFAULT_E, DEFAULT_B)
     if result:
         results.append(result)
 
-# Vary associativity (E)
+# Vary associativity (E) independently
 for E in E_VALUES:
     result = run_simulation("Associativity", E, DEFAULT_S, E, DEFAULT_B)
     if result:
         results.append(result)
 
-# Vary block bits (b)
+# Vary block bits (b) independently
 for b in B_VALUES:
     result = run_simulation("BlockBits", b, DEFAULT_S, DEFAULT_E, b)
+    if result:
+        results.append(result)
+
+# Constant cache size: s and b (fix E=2)
+for config in SB_CONST_CONFIGS:
+    s, E, b = config["s"], config["E"], config["b"]
+    result = run_simulation(f"SetIndexBits_ConstCache_{CONSTANT_CACHE_SIZE}", s, s, E, b)
+    if result:
+        results.append(result)
+
+# Constant cache size: b and E (fix s=6)
+for config in BE_CONST_CONFIGS:
+    s, E, b = config["s"], config["E"], config["b"]
+    result = run_simulation(f"BlockBits_ConstCache_{CONSTANT_CACHE_SIZE}", b, s, E, b)
+    if result:
+        results.append(result)
+
+# Constant cache size: s and E (fix b=5)
+for config in SE_CONST_CONFIGS:
+    s, E, b = config["s"], config["E"], config["b"]
+    result = run_simulation(f"SetIndexBits_ConstCache_{CONSTANT_CACHE_SIZE}_E", s, s, E, b)
     if result:
         results.append(result)
 
@@ -99,8 +157,11 @@ else:
 set_index_data = df[df['Parameter'] == 'SetIndexBits']
 associativity_data = df[df['Parameter'] == 'Associativity']
 block_bits_data = df[df['Parameter'] == 'BlockBits']
+set_index_const_data = df[df['Parameter'] == f"SetIndexBits_ConstCache_{CONSTANT_CACHE_SIZE}"]
+block_bits_const_data = df[df['Parameter'] == f"BlockBits_ConstCache_{CONSTANT_CACHE_SIZE}"]
+set_index_const_e_data = df[df['Parameter'] == f"SetIndexBits_ConstCache_{CONSTANT_CACHE_SIZE}_E"]
 
-# Plot 1: Maximum Execution Time vs. Set Index Bits
+# Plot 1: Maximum Execution Time vs. Set Index Bits (Independent)
 plt.figure(figsize=(8, 6))
 plt.plot(set_index_data['Value'], set_index_data['MaxExecutionTime'], marker='o', label='Set Index Bits')
 plt.xlabel('Set Index Bits (s)')
@@ -111,7 +172,7 @@ plt.legend()
 plt.savefig(os.path.join(PLOT_DIR, 'set_index_bits2.png'))
 plt.close()
 
-# Plot 2: Maximum Execution Time vs. Associativity
+# Plot 2: Maximum Execution Time vs. Associativity (Independent)
 plt.figure(figsize=(8, 6))
 plt.plot(associativity_data['Value'], associativity_data['MaxExecutionTime'], marker='s', label='Associativity')
 plt.xlabel('Associativity (E)')
@@ -122,7 +183,7 @@ plt.legend()
 plt.savefig(os.path.join(PLOT_DIR, 'associativity2.png'))
 plt.close()
 
-# Plot 3: Maximum Execution Time vs. Block Bits
+# Plot 3: Maximum Execution Time vs. Block Bits (Independent)
 plt.figure(figsize=(8, 6))
 plt.plot(block_bits_data['Value'], block_bits_data['MaxExecutionTime'], marker='^', label='Block Bits')
 plt.xlabel('Block Bits (b)')
@@ -133,7 +194,7 @@ plt.legend()
 plt.savefig(os.path.join(PLOT_DIR, 'block_bits2.png'))
 plt.close()
 
-# Plot 4: Maximum Execution Time vs. Cache Size
+# Plot 4: Maximum Execution Time vs. Cache Size (Independent Variations)
 plt.figure(figsize=(8, 6))
 plt.plot(set_index_data['CacheSize'], set_index_data['MaxExecutionTime'], marker='o', label='Varying s')
 plt.plot(associativity_data['CacheSize'], associativity_data['MaxExecutionTime'], marker='s', label='Varying E')
@@ -146,4 +207,39 @@ plt.grid(True)
 plt.savefig(os.path.join(PLOT_DIR, 'cache_size2.png'))
 plt.close()
 
-print(f"Plots saved in {PLOT_DIR}/: set_index_bits.png, associativity.png, block_bits.png, cache_size.png")
+# Plot 5: Maximum Execution Time vs. Set Index Bits (Constant Cache Size, Varying s and b, E=2)
+plt.figure(figsize=(8, 6))
+plt.plot(set_index_const_data['Value'], set_index_const_data['MaxExecutionTime'], marker='o', linestyle='-', label=f'E=2')
+plt.xlabel('Set Index Bits (s)')
+plt.ylabel('Maximum Execution Time (cycles)')
+plt.title(f'Maximum Execution Time vs. Set Index Bits (Constant Cache Size = {CONSTANT_CACHE_SIZE} bytes, E=2)')
+plt.grid(True)
+plt.legend()
+plt.savefig(os.path.join(PLOT_DIR, f'set_index_bits_const_{CONSTANT_CACHE_SIZE}.png'))
+plt.close()
+
+# Plot 6: Maximum Execution Time vs. Block Bits (Constant Cache Size, Varying b and E, s=6)
+plt.figure(figsize=(8, 6))
+plt.plot(block_bits_const_data['Value'], block_bits_const_data['MaxExecutionTime'], marker='^', linestyle='-', label=f's=6')
+plt.xlabel('Block Bits (b)')
+plt.ylabel('Maximum Execution Time (cycles)')
+plt.title(f'Maximum Execution Time vs. Block Bits (Constant Cache Size = {CONSTANT_CACHE_SIZE} bytes, s=6)')
+plt.grid(True)
+plt.legend()
+plt.savefig(os.path.join(PLOT_DIR, f'block_bits_const_{CONSTANT_CACHE_SIZE}.png'))
+plt.close()
+
+# Plot 7: Maximum Execution Time vs. Set Index Bits (Constant Cache Size, Varying s and E, b=5)
+plt.figure(figsize=(8, 6))
+plt.plot(set_index_const_e_data['Value'], set_index_const_e_data['MaxExecutionTime'], marker='o', linestyle='-', label=f'b=5')
+plt.xlabel('Set Index Bits (s)')
+plt.ylabel('Maximum Execution Time (cycles)')
+plt.title(f'Maximum Execution Time vs. Set Index Bits (Constant Cache Size = {CONSTANT_CACHE_SIZE} bytes, b=5)')
+plt.grid(True)
+plt.legend()
+plt.savefig(os.path.join(PLOT_DIR, f'set_index_bits_const_e_{CONSTANT_CACHE_SIZE}.png'))
+plt.close()
+
+print(f"Plots saved in {PLOT_DIR}/: set_index_bits2.png, associativity2.png, block_bits2.png, cache_size2.png, "
+      f"set_index_bits_const_{CONSTANT_CACHE_SIZE}.png, block_bits_const_{CONSTANT_CACHE_SIZE}.png, "
+      f"set_index_bits_const_e_{CONSTANT_CACHE_SIZE}.png")

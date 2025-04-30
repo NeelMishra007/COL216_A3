@@ -179,6 +179,7 @@ void simulateMulticore()
         }
 
         globalCycle++;
+        maxtime = max(maxtime, globalCycle);
     }
 
     for (int i = 0; i < 4; i++)
@@ -359,8 +360,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // trace1 = {{'W', "0x0"}, {'R', "0x3"}};
-    // trace2 = {{'W', "0x0"}};
+    // trace1 = {{'R', "0x0"}, {'W', "0x1000"}};
+    // trace2 = {{'R', "0x0"}};
     // trace3 = {};
     // trace4 = {};
     // Initialize caches and MESI state vectors
